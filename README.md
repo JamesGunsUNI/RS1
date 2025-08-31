@@ -42,6 +42,9 @@ Now install this package:
   cd 41068_ws
   colcon build --symlink-install
   ```
+  or
+  colcon build --packages-select 41068_ignition_bringup --symlink-install
+
 * Source workspace (if you add this to your ~/.bashrc, then you don't need to do this each time)
   ```bash
   source ~/41068_ws/install/setup.bash
