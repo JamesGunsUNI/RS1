@@ -1,0 +1,149 @@
+
+# from launch import LaunchDescription
+# from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, TimerAction
+# from launch.conditions import IfCondition
+# from launch.substitutions import Command, LaunchConfiguration, PathJoinSubstitution
+# from launch_ros.actions import Node
+# from launch_ros.parameter_descriptions import ParameterValue
+# from launch_ros.substitutions import FindPackageShare
+
+
+# def generate_launch_description():
+#     ld = LaunchDescription()
+
+#     # Package paths
+#     pkg_path = FindPackageShare('41068_ignition_bringup')
+#     config_path = PathJoinSubstitution([pkg_path, 'config'])
+
+#     # Launch arguments
+#     use_sim_time_launch_arg = DeclareLaunchArgument(
+#         'use_sim_time', default_value='True', description='Use simulation time'
+#     )
+#     ld.add_action(use_sim_time_launch_arg)
+#     use_sim_time = LaunchConfiguration('use_sim_time')
+
+#     rviz_launch_arg = DeclareLaunchArgument(
+#         'rviz', default_value='False', description='Launch RViz'
+#     )
+#     ld.add_action(rviz_launch_arg)
+
+#     nav2_launch_arg = DeclareLaunchArgument(
+#         'nav2', default_value='True', description='Launch Nav2'
+#     )
+#     ld.add_action(nav2_launch_arg)
+
+#     world_launch_arg = DeclareLaunchArgument(
+#         'world', default_value='simple_trees', description='World to load',
+#         choices=['simple_trees', 'large_demo']
+#     )
+#     ld.add_action(world_launch_arg)
+#     world = LaunchConfiguration('world')
+
+#     ############################################################################
+#     # Function to create robot nodes with namespace
+#     def create_robot_nodes(robot_name, x_pos, y_pos, z_pos):
+#         # robot_description
+#         robot_description_content = ParameterValue(
+#             Command(['xacro ', PathJoinSubstitution([pkg_path, 'urdf', 'husky.urdf.xacro'])]),
+#             value_type=str
+#         )
+
+#         # Robot State Publisher
+#         r_state_pub = Node(
+#             package='robot_state_publisher',
+#             executable='robot_state_publisher',
+#             namespace=robot_name,
+#             parameters=[{
+#                 'robot_description': robot_description_content,
+#                 'use_sim_time': use_sim_time,
+#                 'frame_prefix': robot_name + '/'
+#             }]
+#         )
+
+#         # EKF Localization
+#         r_localization = Node(
+#             package='robot_localization',
+#             executable='ekf_node',
+#             name=f'{robot_name}_ekf',
+#             namespace=robot_name,
+#             output='screen',
+#             parameters=[PathJoinSubstitution([config_path, f'{robot_name}_localization.yaml']),
+#                         {'use_sim_time': use_sim_time}]
+#         )
+
+#         # Spawn robot in Gazebo
+#         spawner = Node(
+#             package='ros_ign_gazebo',
+#             executable='create',
+#             output='screen',
+#             namespace=robot_name,
+#             parameters=[{'use_sim_time': use_sim_time}],
+#             arguments=[
+#                 '-topic', f'/{robot_name}/robot_description',
+#                 '-x', str(x_pos),
+#                 '-y', str(y_pos),
+#                 '-z', str(z_pos)
+#             ]
+#         )
+
+#         # Spawn sequence: create robot first, then start state publisher and EKF
+#         return [
+#             TimerAction(period=3.0, actions=[spawner]),
+#             TimerAction(period=4.0, actions=[r_state_pub]),
+#             TimerAction(period=4.5, actions=[r_localization])
+#         ]
+
+#     ############################################################################
+#     # Gazebo
+#     gazebo = IncludeLaunchDescription(
+#         PathJoinSubstitution([FindPackageShare('ros_ign_gazebo'), 'launch', 'ign_gazebo.launch.py']),
+#         launch_arguments={
+#             'ign_args': [PathJoinSubstitution([pkg_path, 'worlds', [world, '.sdf']]), ' -r']
+#         }.items()
+#     )
+#     ld.add_action(gazebo)
+
+#     ############################################################################
+#     # Bridge topics
+#     gazebo_bridge = Node(
+#         package='ros_ign_bridge',
+#         executable='parameter_bridge',
+#         parameters=[{'config_file': PathJoinSubstitution([config_path, 'gazebo_bridge.yaml']),
+#                      'use_sim_time': use_sim_time}]
+#     )
+#     ld.add_action(gazebo_bridge)
+
+#     ############################################################################
+#     # Robot nodes
+#     robot1_nodes = create_robot_nodes('robot1', 1, 1, 0.4)
+#     for node in robot1_nodes:
+#         ld.add_action(node)
+
+#     # robot2_nodes = create_robot_nodes('robot2', 2, 2, 0.4)
+#     # for node in robot2_nodes:
+#     #     ld.add_action(node)
+
+#     ############################################################################
+#     # RViz
+#     rviz_node = Node(
+#         package='rviz2',
+#         executable='rviz2',
+#         output='screen',
+#         parameters=[{'use_sim_time': use_sim_time}],
+#         arguments=['-d', PathJoinSubstitution([config_path, '41068.rviz'])],
+#         condition=IfCondition(LaunchConfiguration('rviz'))
+#     )
+#     ld.add_action(rviz_node)
+
+#     ############################################################################
+#     # Nav2
+#     nav2 = IncludeLaunchDescription(
+#         PathJoinSubstitution([pkg_path, 'launch', '41068_navigation.launch.py']),
+#         launch_arguments={'use_sim_time': use_sim_time}.items(),
+#         condition=IfCondition(LaunchConfiguration('nav2'))
+#     )
+#     ld.add_action(nav2)
+
+#     return ld
+
+####################################################################################################################################################################################################################

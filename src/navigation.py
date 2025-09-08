@@ -4,7 +4,7 @@ from rclpy.action import ActionClient
 from nav2_msgs.action import NavigateToPose
 from geometry_msgs.msg import PoseStamped
 
-class NavToPose(Node):
+class NavNode(Node):
     def __init__(self):
         super().__init__('nav_to_pose_client')
         self._client = ActionClient(self, NavigateToPose, 'navigate_to_pose')
@@ -39,7 +39,7 @@ class NavToPose(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = NavToPose()
+    node = NavNode()
     node.send_goal(4.0, 3.0)  # Example: go to (2,1)
     rclpy.spin(node)
     node.destroy_node()

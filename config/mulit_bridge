@@ -1,0 +1,142 @@
+
+# # -------------------------
+# # Clock
+# # -------------------------
+# - ros_topic_name: '/clock'
+#   gz_topic_name: '/clock'
+#   ros_type_name: 'rosgraph_msgs/msg/Clock'
+#   gz_type_name: 'gz.msgs.Clock'
+#   direction: GZ_TO_ROS
+
+# # -------------------------
+# # Robot 1
+# # -------------------------
+# # Joint states
+# - ros_topic_name: '/robot1/joint_states'
+#   gz_topic_name: '/model/robot1/joint_states'
+#   ros_type_name: 'sensor_msgs/msg/JointState'
+#   gz_type_name: 'ignition.msgs.Model'
+#   direction: GZ_TO_ROS
+
+# # Odometry
+# - ros_topic_name: '/robot1/odom'
+#   gz_topic_name: '/model/robot1/odometry'
+#   ros_type_name: 'nav_msgs/msg/Odometry'
+#   gz_type_name: 'ignition.msgs.Odometry'
+#   direction: GZ_TO_ROS
+
+# # IMU
+# - ros_topic_name: '/robot1/imu'
+#   gz_topic_name: '/model/robot1/imu'
+#   ros_type_name: 'sensor_msgs/msg/Imu'
+#   gz_type_name: 'ignition.msgs.IMU'
+#   direction: GZ_TO_ROS
+
+# # Command velocity
+# - ros_topic_name: '/robot1/cmd_vel'
+#   gz_topic_name: '/model/robot1/cmd_vel'
+#   ros_type_name: 'geometry_msgs/msg/Twist'
+#   gz_type_name: 'ignition.msgs.Twist'
+#   direction: ROS_TO_GZ
+
+# # Lidar: laserscan
+# - ros_topic_name: '/robot1/scan'
+#   gz_topic_name: '/model/robot1/scan'
+#   ros_type_name: 'sensor_msgs/msg/LaserScan'
+#   gz_type_name: 'gz.msgs.LaserScan'
+#   direction: GZ_TO_ROS
+
+# # Lidar: pointcloud
+# - ros_topic_name: '/robot1/scan/points'
+#   gz_topic_name: '/model/robot1/scan/points'
+#   ros_type_name: 'sensor_msgs/msg/PointCloud2'
+#   gz_type_name: 'gz.msgs.PointCloudPacked'
+#   direction: GZ_TO_ROS
+
+# # Camera: RGB
+# - ros_topic_name: '/robot1/camera/image'
+#   gz_topic_name: '/model/robot1/camera/image'
+#   ros_type_name: 'sensor_msgs/msg/Image'
+#   gz_type_name: 'ignition.msgs.Image'
+#   direction: GZ_TO_ROS
+
+# # Camera: depth
+# - ros_topic_name: '/robot1/camera/depth/image'
+#   gz_topic_name: '/model/robot1/camera/depth_image'
+#   ros_type_name: 'sensor_msgs/msg/Image'
+#   gz_type_name: 'ignition.msgs.Image'
+#   direction: GZ_TO_ROS
+
+# # Camera: depth pointcloud
+# - ros_topic_name: '/robot1/camera/depth/points'
+#   gz_topic_name: '/model/robot1/camera/points'
+#   ros_type_name: 'sensor_msgs/msg/PointCloud2'
+#   gz_type_name: 'ignition.msgs.PointCloudPacked'
+#   direction: GZ_TO_ROS
+
+# # -------------------------
+# # Robot 2
+# # -------------------------
+# # Joint states
+# - ros_topic_name: '/robot2/joint_states'
+#   gz_topic_name: '/model/robot2/joint_states'
+#   ros_type_name: 'sensor_msgs/msg/JointState'
+#   gz_type_name: 'ignition.msgs.Model'
+#   direction: GZ_TO_ROS
+
+# # Odometry
+# - ros_topic_name: '/robot2/odom'
+#   gz_topic_name: '/model/robot2/odometry'
+#   ros_type_name: 'nav_msgs/msg/Odometry'
+#   gz_type_name: 'ignition.msgs.Odometry'
+#   direction: GZ_TO_ROS
+
+# # IMU
+# - ros_topic_name: '/robot2/imu'
+#   gz_topic_name: '/model/robot2/imu'
+#   ros_type_name: 'sensor_msgs/msg/Imu'
+#   gz_type_name: 'ignition.msgs.IMU'
+#   direction: GZ_TO_ROS
+
+# # Command velocity
+# - ros_topic_name: '/robot2/cmd_vel'
+#   gz_topic_name: '/model/robot2/cmd_vel'
+#   ros_type_name: 'geometry_msgs/msg/Twist'
+#   gz_type_name: 'ignition.msgs.Twist'
+#   direction: ROS_TO_GZ
+
+# # Lidar: laserscan
+# - ros_topic_name: '/robot2/scan'
+#   gz_topic_name: '/model/robot2/scan'
+#   ros_type_name: 'sensor_msgs/msg/LaserScan'
+#   gz_type_name: 'gz.msgs.LaserScan'
+#   direction: GZ_TO_ROS
+
+# # Lidar: pointcloud
+# - ros_topic_name: '/robot2/scan/points'
+#   gz_topic_name: '/model/robot2/scan/points'
+#   ros_type_name: 'sensor_msgs/msg/PointCloud2'
+#   gz_type_name: 'gz.msgs.PointCloudPacked'
+#   direction: GZ_TO_ROS
+
+# # Camera: RGB
+# - ros_topic_name: '/robot2/camera/image'
+#   gz_topic_name: '/model/robot2/camera/image'
+#   ros_type_name: 'sensor_msgs/msg/Image'
+#   gz_type_name: 'ignition.msgs.Image'
+#   direction: GZ_TO_ROS
+
+# # Camera: depth
+# - ros_topic_name: '/robot2/camera/depth/image'
+#   gz_topic_name: '/model/robot2/camera/depth_image'
+#   ros_type_name: 'sensor_msgs/msg/Image'
+#   gz_type_name: 'ignition.msgs.Image'
+#   direction: GZ_TO_ROS
+
+# # Camera: depth pointcloud
+# - ros_topic_name: '/robot2/camera/depth/points'
+#   gz_topic_name: '/model/robot2/camera/points'
+#   ros_type_name: 'sensor_msgs/msg/PointCloud2'
+#   gz_type_name: 'ignition.msgs.PointCloudPacked'
+#   direction: GZ_TO_ROS
+

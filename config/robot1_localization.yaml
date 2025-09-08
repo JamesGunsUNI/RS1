@@ -1,0 +1,25 @@
+robot_localization:
+  ros__parameters:
+    frequency: 30.0
+    two_d_mode: true
+    publish_acceleration: false
+    publish_tf: true
+    map_frame: /robot1/map
+    odom_frame: /robot1/odom
+    base_link_frame: /robot1/base_link
+    world_frame: /robot1/odom
+
+    # Topics for Robot1
+    odom0: /robot1/odom
+    odom0_config: [false, false, false,
+                   false, false, false,
+                   true, true, false,
+                   false, false, true,
+                   false, false, false]
+
+    imu0: /robot1/imu
+    imu0_config: [false, false, false,
+                  false, false, false,
+                  false, false, false,
+                  false, false, true,
+                  false, false, false]
