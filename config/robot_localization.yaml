@@ -10,7 +10,7 @@ robot_localization:
         base_link_frame: base_link
         world_frame: odom
 
-        odom0: odometry
+        odom0: /odometry
         odom0_config: [false, false, false,
                       false, false, false,
                       true, true, false,

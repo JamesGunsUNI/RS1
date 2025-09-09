@@ -84,22 +84,13 @@ def generate_launch_description():
     )
     ld.add_action(gazebo)
 
-    spawn_x = 8
-    spawn_y = -8.0
-    spawn_z = 0.4 
-
     # Spawn robot in Gazebo
     robot_spawner = Node(
         package='ros_ign_gazebo',
         executable='create',
         output='screen',
         parameters=[{'use_sim_time': use_sim_time}],
-        arguments=[
-            '-topic', '/robot_description',
-            '-x', str(spawn_x),
-            '-y', str(spawn_y),
-            '-z', str(spawn_z)
-        ]
+        arguments=['-topic', '/robot_description', '-z', '0.4']
     )
     ld.add_action(robot_spawner)
 
