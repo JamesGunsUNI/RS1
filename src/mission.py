@@ -1,6 +1,10 @@
 import rclpy
 from rclpy.node import Node
+from rclpy.action import ActionClient
+from nav2_msgs.action import NavigateToPose
+from collections import deque
 from robot import Robot
+import math
 
 '''
 cd ros_ws/
@@ -15,56 +19,41 @@ cd ros_ws/rs1/src/
 
 python mission.py
 '''
-goals = [
-    (4.0, 5.0),
-    (3.0, 4.0),
-    (2.0, 1.0)
-]
-
-NUM_ROBOTS = 1
 
 class MissionControl:
+    def __init__(self, num_robots=1):
+        self.robots = [Robot(f'robot_{i}') for i in range(num_robots)]
 
-    def __init__(self, robots):
-        self.robots = robots
-        self.robots = []
-
-        for _ in NUM_ROBOTS:
-            self.robots.append(Robot())
-
-
-    def run_mission(self):
+    def run_mission(self, goals):
+        """Queue multiple goals to the first robot (example)"""
         for goal in goals:
-            print(f"moving to new goal: {goal}")
-            self.robots[0].move_to_goal(goal[0], goal[1])
+            x, y = goal
+            self.robots[0].move_to_goal(x, y)
 
-    def updateSoilHeatMap(self, soil_sample_data):
-        '''
-        fucntion that updates UI heat map with latest data
-        returns nothing
-        
-        '''
-        raise NotImplementedError("INTERFACE UI HEAT MAP UPDATE HERE")
-    
-    def send_manual_goal(self, goal_x, goal_y, robot_id):
-        '''
-        fucntion for UI to use that gets, x,y and int represent robot number to send a goal to the robot
-
-        returns nothing
-        
-        '''
-        self.robots[robot_id].move_to_goal(goal_x, goal_y)
+    def send_manual_goal(self, x, y, robot_id=0):
+        """Send a goal to a specific robot"""
+        self.robots[robot_id].move_to_goal(x, y)
 
     def terminate(self):
-        for _ in NUM_ROBOTS:
-            pass
+        # Cleanup if needed
         rclpy.shutdown()
 
 
 if __name__ == '__main__':
     rclpy.init()
-    mission_controller = MissionControl()
-    mission_controller.run_mission()
-    #rclpy.spin(mission_controller.navigator)
-    mission_controller.terminate()
 
+    # Define your goals
+    goals = [
+        (4.0, 5.0),
+        (-3.0, -4.0),
+        (2.0, 1.0)
+    ]
+
+    # Initialize Mission Control with 1 robot
+    mission_controller = MissionControl(num_robots=1)
+    mission_controller.run_mission(goals)
+
+    # Spin the robot's navigator to process actions
+    rclpy.spin(mission_controller.robots[0].navigator)
+
+    mission_controller.terminate()

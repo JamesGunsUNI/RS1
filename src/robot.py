@@ -1,24 +1,24 @@
 from navigation import NavNode
 
-class Robot():
+class Robot:
+    def __init__(self, name='robot'):
+        self.navigator = NavNode(name=f'{name}_navigator')
+        self.homeXY = (0.0, 0.0, 0.0)
 
-    def __init__(self):
-        self.navigator = NavNode()
-        self.homeXY = [0,0,0] #how to get the robots current location
+        # Register the post-goal callback to take a soil sample
+        self.navigator.set_post_goal_callback(self.take_soil_sample)
 
-    def move_to_goal(self, x, y):
-        self.navigator.send_goal(float(x), y)
-    
+    def move_to_goal(self, x, y, yaw=0.0):
+        self.navigator.add_goal(x, y, yaw)
+
     def take_soil_sample(self):
-        '''
-        fucntion that triggers the colleciton of a soil sample
-
-        returns a float value of the moister level
-        
-        '''
-        raise NotImplementedError("INTERFACE DATA COLLECTION INTO HERE")
+        """Simulate taking a soil sample after reaching a goal"""
+        self.navigator.get_logger().info("Taking soil sample...")
+        moisture = 0.42  # placeholder
+        self.navigator.get_logger().info(f"Soil moisture: {moisture}")
+        return moisture
 
     def move_to_home(self):
-        self.navigator.send_goal(self.homeXY[0], self.homeXY[1])
+        self.navigator.add_goal(*self.homeXY)
 
-        
+

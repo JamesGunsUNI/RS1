@@ -2,12 +2,25 @@ import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
 from nav2_msgs.action import NavigateToPose
-from geometry_msgs.msg import PoseStamped
+from collections import deque
+import math
 
 class NavNode(Node):
-    def __init__(self):
-        super().__init__('nav_to_pose_client')
+    def __init__(self, name='nav_to_pose_client'):
+        super().__init__(name)
         self._client = ActionClient(self, NavigateToPose, 'navigate_to_pose')
+        self.isMoving = False
+        self.goal_queue = deque()
+        self.post_goal_callback = None
+
+    def set_post_goal_callback(self, callback):
+        self.post_goal_callback = callback
+
+    def add_goal(self, x, y, yaw=0.0):
+        self.get_logger().info(f'Added goal to queue: ({x}, {y}, {yaw})')
+        self.goal_queue.append((x, y, yaw))
+        if not self.isMoving:
+            self.try_next_goal()
 
     def send_goal(self, x, y, yaw=0.0):
         goal_msg = NavigateToPose.Goal()
@@ -16,9 +29,11 @@ class NavNode(Node):
 
         goal_msg.pose.pose.position.x = x
         goal_msg.pose.pose.position.y = y
-        # Simple yaw quaternion
-        goal_msg.pose.pose.orientation.z = 0.0
-        goal_msg.pose.pose.orientation.w = 1.0
+
+        qz = math.sin(yaw / 2.0)
+        qw = math.cos(yaw / 2.0)
+        goal_msg.pose.pose.orientation.z = qz
+        goal_msg.pose.pose.orientation.w = qw
 
         self._client.wait_for_server()
         self._send_goal_future = self._client.send_goal_async(goal_msg)
@@ -28,22 +43,30 @@ class NavNode(Node):
         goal_handle = future.result()
         if not goal_handle.accepted:
             self.get_logger().info('Goal rejected :(')
+            self.isMoving = False
+            self.try_next_goal()
             return
+
         self.get_logger().info('Goal accepted :)')
+        self.isMoving = True
         self._get_result_future = goal_handle.get_result_async()
         self._get_result_future.add_done_callback(self.get_result_callback)
 
     def get_result_callback(self, future):
         result = future.result().result
         self.get_logger().info(f'Navigation result: {result}')
+        self.isMoving = False
 
-def main(args=None):
-    rclpy.init(args=args)
-    node = NavNode()
-    node.send_goal(4.0, 3.0)  # Example: go to (2,1)
-    rclpy.spin(node)
-    node.destroy_node()
-    rclpy.shutdown()
+        # Call post-goal callback (e.g., soil sampling)
+        if self.post_goal_callback:
+            self.post_goal_callback()
 
-if __name__ == '__main__':
-    main()
+        self.try_next_goal()
+
+    def try_next_goal(self):
+        if self.goal_queue:
+            x, y, yaw = self.goal_queue.popleft()
+            self.get_logger().info(f'Sending next goal: x={x}, y={y}, yaw={yaw}')
+            self.send_goal(x, y, yaw)
+        else:
+            self.get_logger().info('No more goals queued')

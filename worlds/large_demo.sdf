@@ -152,7 +152,7 @@
         https://fuel.gazebosim.org/1.0/OpenRobotics/models/Oak%20tree
       </uri>
       <name>oak2</name>
-      <pose>2.99444 -4.95498 -0.3 0 -0 0.8</pose>
+      <pose>5.99444 -4.95498 -0.3 0 -0 0.8</pose>
     </include>
     <include>
       <uri>
@@ -241,29 +241,30 @@
       <pose>-2.27195 -8.68441 0 0 -0 0.9</pose>
     </include>
 
-    <!-- Platypus -->
-    <include>
-      <uri>
-        https://fuel.gazebosim.org/1.0/OpenRobotics/models/platypus
-      </uri>
-      <name>platypus1</name>
-      <pose>-10 5 0 0 0 0</pose>
-    </include>
-
     <!-- Rocks -->
     <include>
       <uri>
         https://fuel.gazebosim.org/1.0/OpenRobotics/models/Falling%20Rock%201
       </uri>
-      <name>rock1</name>
-      <pose>-6.30926 -8.38159 0 0 0 0</pose>
+      <name>rock0</name>
+      <pose>-6.30926 -8.38159 0.3 0 0 0</pose>
+      <scale>2 2 2</scale>
     </include>
     <include>
       <uri>
         https://fuel.gazebosim.org/1.0/OpenRobotics/models/Falling%20Rock%202
       </uri>
-      <name>rock2</name>
+      <name>rock1</name>
       <pose>-8.27162 -6.19647 0 0 0 0</pose>
+      <scale>2 2 2</scale>
+    </include>
+    <include>
+      <uri>
+        https://fuel.gazebosim.org/1.0/OpenRobotics/models/Falling%20Rock%201
+      </uri>
+      <name>rock2</name>
+      <pose>10 10 0.3 0 0 0</pose>
+      <scale>2 7 2</scale>
     </include>
     <include>
       <uri>
@@ -271,6 +272,7 @@
       </uri>
       <name>rock3</name>
       <pose>-9.2841 -4.61803 0 0 0 0</pose>
+      <scale>2 2 2</scale>
     </include>
     <include>
       <uri>
@@ -278,6 +280,7 @@
       </uri>
       <name>rock4</name>
       <pose>-10 -12 0 0 0 0</pose>
+      <scale>2 2 2</scale>
     </include>
     <include>
       <uri>
@@ -285,6 +288,7 @@
       </uri>
       <name>rock5</name>
       <pose>-12 -12 0 0 0 0</pose>
+      <scale>2 2 2</scale>
     </include>
     <include>
       <uri>
@@ -292,6 +296,7 @@
       </uri>
       <name>rock6</name>
       <pose>-14 -12 0 0 0 0</pose>
+      <scale>2 2 2</scale>
     </include>
 
   </world>
