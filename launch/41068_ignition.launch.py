@@ -13,7 +13,7 @@ def generate_launch_description():
     ld = LaunchDescription()
 
     # Get paths to directories
-    pkg_path = FindPackageShare('41068_ignition_bringup')
+    pkg_path = FindPackageShare('ignition_bringup')
     config_path = PathJoinSubstitution([pkg_path,
                                        'config'])
 

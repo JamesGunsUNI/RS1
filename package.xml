@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>41068_ignition_bringup</name>
+  <name>ignition_bringup</name>
   <version>1.0.3</version>
   <description>TurtleBot 4 Ignition Simulator bringup</description>
   <maintainer email="rkreinin@clearpathrobotics.com">rkreinin</maintainer>

@@ -34,22 +34,10 @@ Dependencies:
 Now install this package:
 * Copy this package to the `src` directory in this workspace
   ```bash
-  source /opt/ros/humble/setup.bash
-  cd 41068_ws
-  colcon build --symlink-install
-  ```
-  or
-  colcon build --packages-select 41068_ignition_bringup --symlink-install
 
+  colcon build --packages-select ignition_bringup_41068 --symlink-install
 
-  ```bash
   source ~/.bashrc
+
+  ros2 launch ignition_bringup_41068 41068_ignition.launch.py slam:=true nav2:=true rviz:=true world:=large_demo
   ```
-* Launch Options
-  ```bash
-  ros2 launch 41068_ignition_bringup 41068_ignition.launch.py
-  ```
-  ```bash
-  ros2 launch 41068_ignition_bringup 41068_ignition.launch.py slam:=true nav2:=true rviz:=true world:=large_demo
-  ```
-* When launching with rviz, you can send a waypoint to the robot by clicking the "2D Goal pose" and then a location in the map. The robot is navigating using the nav2 package. If it gets stuck, you can try the buttons in the Navigation 2 panel in the top right of RVIZ.
