@@ -1,0 +1,70 @@
+[0.000000] (-) TimerEvent: {}
+[0.001787] (rs1) JobQueued: {'identifier': 'rs1', 'dependencies': OrderedDict()}
+[0.001851] (rs1) JobStarted: {'identifier': 'rs1'}
+[0.009363] (rs1) JobProgress: {'identifier': 'rs1', 'progress': 'cmake'}
+[0.010574] (rs1) Command: {'cmd': ['/usr/bin/cmake', '/home/ben/ros_ws/src/rs1', '-DCMAKE_INSTALL_PREFIX=/home/ben/ros_ws/src/rs1/install/rs1'], 'cwd': '/home/ben/ros_ws/src/rs1/build/rs1', 'env': OrderedDict([('LESSOPEN', '| /usr/bin/lesspipe %s'), ('CONDA_PROMPT_MODIFIER', '(base)'), ('USER', 'ben'), ('ROS_PACKAGE_PATH', '/home/ben/ros_ws/install/stage/share'), ('SHLVL', '2'), ('LD_LIBRARY_PATH', '/home/ben/ros_ws/install/stage_ros2/lib:/home/ben/ros_ws/install/stage/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib'), ('HOME', '/home/ben'), ('CONDA_SHLVL', '1'), ('OLDPWD', '/home/ben/ros_ws/src'), ('ROS_PYTHON_VERSION', '3'), ('DBUS_SESSION_BUS_ADDRESS', 'unix:path=/run/user/1000/bus'), ('COLORTERM', 'truecolor'), ('WSL_DISTRO_NAME', 'Ubuntu-22.04'), ('TERMINATOR_DBUS_NAME', 'net.tenshu.Terminator25ef4b219e3b005583550f2b0f9f990c3'), ('WAYLAND_DISPLAY', 'wayland-0'), ('COLCON_PREFIX_PATH', '/home/ben/ros_ws/install'), ('ROS_DISTRO', 'humble'), ('LOGNAME', 'ben'), ('NAME', 'BensLaptop'), ('WSL_INTEROP', '/run/WSL/293_interop'), ('PULSE_SERVER', 'unix:/mnt/wslg/PulseServer'), ('_', '/usr/bin/colcon'), ('ROS_VERSION', '2'), ('PKG_CONFIG_PATH', '/home/ben/ros_ws/install/stage/lib/x86_64-linux-gnu/pkgconfig:/home/ben/ros_ws/install/stage/lib/pkgconfig'), ('TERM', 'xterm-256color'), ('ROS_LOCALHOST_ONLY', '0'), ('PATH', '/home/ben/miniconda3/bin:/home/ben/miniconda3/condabin:/home/ben/ros_ws/install/stage/bin:/opt/ros/humble/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/WINDOWS/system32:/mnt/c/WINDOWS:/mnt/c/WINDOWS/System32/Wbem:/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0:/mnt/c/WINDOWS/System32/OpenSSH:/mnt/c/Program Files/dotnet:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit:/mnt/c/Users/benjc/AppData/Local/Programs/Python/Python311/Scripts:/mnt/c/Users/benjc/AppData/Local/Programs/Python/Python311:/mnt/c/Users/benjc/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/benjc/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/benjc/.dotnet/tools:/mnt/c/msys64/ucrt64/bin:/snap/bin'), ('XDG_RUNTIME_DIR', '/run/user/1000/'), ('DISPLAY', ':0'), ('TERMINATOR_DBUS_PATH', '/net/tenshu/Terminator2'), ('LANG', 'C.UTF-8'), ('LS_COLORS', 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'), ('AMENT_PREFIX_PATH', '/home/ben/ros_ws/install/stage_ros2:/home/ben/ros_ws/install/particle_filter_localisation:/opt/ros/humble'), ('CONDA_PYTHON_EXE', '/home/ben/miniconda3/bin/python'), ('SHELL', '/bin/bash'), ('TERMINATOR_UUID', 'urn:uuid:dab2823a-fc73-49d5-9c4a-e096b20f8993'), ('LESSCLOSE', '/usr/bin/lesspipe %s %s'), ('CONDA_DEFAULT_ENV', 'base'), ('PWD', '/home/ben/ros_ws/src/rs1/build/rs1'), ('CONDA_EXE', '/home/ben/miniconda3/bin/conda'), ('XDG_DATA_DIRS', '/usr/local/share:/usr/share:/var/lib/snapd/desktop'), ('PYTHONPATH', '/home/ben/ros_ws/install/particle_filter_localisation/lib/python3.10/site-packages:/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages'), ('CONDA_PREFIX', '/home/ben/miniconda3'), ('COLCON', '1'), ('WSL2_GUI_APPS_ENABLED', '1'), ('VTE_VERSION', '6800'), ('HOSTTYPE', 'x86_64'), ('CMAKE_PREFIX_PATH', '/home/ben/ros_ws/install/stage_ros2:/home/ben/ros_ws/install/particle_filter_localisation:/opt/ros/humble:/home/ben/ros_ws/install/stage'), ('WSLENV', '')]), 'shell': False}
+[0.099565] (-) TimerEvent: {}
+[0.142077] (rs1) StdoutLine: {'line': b'-- The C compiler identification is GNU 11.4.0\n'}
+[0.200194] (-) TimerEvent: {}
+[0.301256] (-) TimerEvent: {}
+[0.401944] (-) TimerEvent: {}
+[0.502530] (-) TimerEvent: {}
+[0.537533] (rs1) StdoutLine: {'line': b'-- The CXX compiler identification is GNU 11.4.0\n'}
+[0.602776] (-) TimerEvent: {}
+[0.703379] (-) TimerEvent: {}
+[0.795471] (rs1) StdoutLine: {'line': b'-- Detecting C compiler ABI info\n'}
+[0.804010] (-) TimerEvent: {}
+[0.904876] (-) TimerEvent: {}
+[0.910078] (rs1) StdoutLine: {'line': b'-- Detecting C compiler ABI info - done\n'}
+[0.917370] (rs1) StdoutLine: {'line': b'-- Check for working C compiler: /usr/bin/cc - skipped\n'}
+[0.917615] (rs1) StdoutLine: {'line': b'-- Detecting C compile features\n'}
+[0.918000] (rs1) StdoutLine: {'line': b'-- Detecting C compile features - done\n'}
+[0.921418] (rs1) StdoutLine: {'line': b'-- Detecting CXX compiler ABI info\n'}
+[1.005250] (-) TimerEvent: {}
+[1.043510] (rs1) StdoutLine: {'line': b'-- Detecting CXX compiler ABI info - done\n'}
+[1.052643] (rs1) StdoutLine: {'line': b'-- Check for working CXX compiler: /usr/bin/c++ - skipped\n'}
+[1.053062] (rs1) StdoutLine: {'line': b'-- Detecting CXX compile features\n'}
+[1.053321] (rs1) StdoutLine: {'line': b'-- Detecting CXX compile features - done\n'}
+[1.055698] (rs1) StdoutLine: {'line': b'-- Found ament_cmake: 1.3.12 (/opt/ros/humble/share/ament_cmake/cmake)\n'}
+[1.105803] (-) TimerEvent: {}
+[1.207188] (-) TimerEvent: {}
+[1.307998] (-) TimerEvent: {}
+[1.409433] (-) TimerEvent: {}
+[1.445043] (rs1) StdoutLine: {'line': b'-- Found Python3: /home/ben/miniconda3/bin/python3 (found version "3.13.5") found components: Interpreter \n'}
+[1.510092] (-) TimerEvent: {}
+[1.611110] (-) TimerEvent: {}
+[1.714947] (-) TimerEvent: {}
+[1.820911] (-) TimerEvent: {}
+[1.926876] (-) TimerEvent: {}
+[2.030436] (-) TimerEvent: {}
+[2.136651] (-) TimerEvent: {}
+[2.242802] (-) TimerEvent: {}
+[2.348798] (-) TimerEvent: {}
+[2.453156] (-) TimerEvent: {}
+[2.559280] (-) TimerEvent: {}
+[2.665367] (-) TimerEvent: {}
+[2.771417] (-) TimerEvent: {}
+[2.876105] (-) TimerEvent: {}
+[2.943535] (rs1) StderrLine: {'line': b'\x1b[31mCMake Error at CMakeLists.txt:11 (find_package):\n'}
+[2.943837] (rs1) StderrLine: {'line': b'  By not providing "Findros_ign_interfaces.cmake" in CMAKE_MODULE_PATH this\n'}
+[2.944117] (rs1) StderrLine: {'line': b'  project has asked CMake to find a package configuration file provided by\n'}
+[2.944228] (rs1) StderrLine: {'line': b'  "ros_ign_interfaces", but CMake did not find one.\n'}
+[2.944284] (rs1) StderrLine: {'line': b'\n'}
+[2.944335] (rs1) StderrLine: {'line': b'  Could not find a package configuration file provided by\n'}
+[2.944385] (rs1) StderrLine: {'line': b'  "ros_ign_interfaces" with any of the following names:\n'}
+[2.944434] (rs1) StderrLine: {'line': b'\n'}
+[2.944481] (rs1) StderrLine: {'line': b'    ros_ign_interfacesConfig.cmake\n'}
+[2.944530] (rs1) StderrLine: {'line': b'    ros_ign_interfaces-config.cmake\n'}
+[2.944579] (rs1) StderrLine: {'line': b'\n'}
+[2.944634] (rs1) StderrLine: {'line': b'  Add the installation prefix of "ros_ign_interfaces" to CMAKE_PREFIX_PATH or\n'}
+[2.944683] (rs1) StderrLine: {'line': b'  set "ros_ign_interfaces_DIR" to a directory containing one of the above\n'}
+[2.944732] (rs1) StderrLine: {'line': b'  files.  If "ros_ign_interfaces" provides a separate development package or\n'}
+[2.944780] (rs1) StderrLine: {'line': b'  SDK, be sure it has been installed.\n'}
+[2.944827] (rs1) StderrLine: {'line': b'\n'}
+[2.944873] (rs1) StderrLine: {'line': b'\x1b[0m\n'}
+[2.944920] (rs1) StdoutLine: {'line': b'-- Configuring incomplete, errors occurred!\n'}
+[2.944982] (rs1) StdoutLine: {'line': b'See also "/home/ben/ros_ws/src/rs1/build/rs1/CMakeFiles/CMakeOutput.log".\n'}
+[2.948731] (rs1) CommandEnded: {'returncode': 1}
+[2.967890] (rs1) JobEnded: {'identifier': 'rs1', 'rc': 1}
+[2.976697] (-) TimerEvent: {}
+[2.979308] (-) EventReactorShutdown: {}
