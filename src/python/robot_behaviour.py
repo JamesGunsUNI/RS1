@@ -7,13 +7,31 @@ class RobotBrain():
         ################
         ### BT Nodes ###
         ################
-        # INITIALISE
+        #TERMINAL
+        self.terminal = NodeTypes.Sequence([
+            NodeTypes.Condition("Mission Complete?", self.mission_done),
+            self.terminate
+        ])
+
+        #TERMINATE
+        self.terminate = NodeTypes.Fallback([
+            self.power_off,
+            NodeTypes.Action("Return Home", self.return_home)
+        ])
+
+        #POWER OFF
+        self.power_off = NodeTypes.Sequence([
+            NodeTypes.Condition("Is Robot Home", self.is_robot_home)
+        ])
+
+        #INITIALISE
         self.initialise = NodeTypes.Sequence([
+            NodeTypes.Condition("Is Robot Home", self.is_robot_home)
             NodeTypes.Condition("Is Battery Charged?", self.is_battery_charged),
             NodeTypes.Action("Leave Charging Station", self.leave_charging_station)
         ])
 
-        # BATTERY CHECK
+        #BATTERY CHECK
         self.battery_check = NodeTypes.Fallback([
             NodeTypes.Sequence([
                 NodeTypes.Condition("Battery Critical?", self.is_battery_critical),
@@ -21,20 +39,22 @@ class RobotBrain():
             ]),
         ])
 
-        # NAVIGATION SUBTREE
-        self.navigation = NodeTypes.Sequence([
-            NodeTypes.Action("Select Next Sample Location", self.select_next_sample_location),
-            NodeTypes.Condition("Valid Sample Location?", self.valid_sample_location),
-            NodeTypes.Action("Plan Path To Sample Site", self.plan_path_to_sample_site),
-            NodeTypes.Action("Navigate To Sample Site", self.navigate_to_sample_site),
+        #SAMPLE COLLECTION
+        self.sample_collection = NodeTypes.Sequence([
+            NodeTypes.Condition("Is Robot Near Unvisited Tree?", self.sample_valid),
+            NodeTypes.Action("Collect Sample", self.collect_sample)
         ])
 
-        # SAMPLE COLLECTION SUBTREE
-        self.sample_collection = NodeTypes.Sequence([
-            self.navigation,
-            NodeTypes.Action("Take Sample", self.take_sample),
-            NodeTypes.Condition("Sample Valid?", self.sample_valid),
-            NodeTypes.Action("Record Sample", self.record_sample)
+        #NAVIGATION
+        self.navigation = NodeTypes.Sequence([
+            self.goal_selection,
+            NodeTypes.Action("Navigate To Goal", self.navigate_to_sample_site),
+        ])
+
+        #GOAL SELECTION
+        self.goal_selection = NodeTypes.Sequence([
+            NodeTypes.Condition("Does The Robot Have A Goal?", self.has_goal),
+            NodeTypes.Action("Select Next Sample Location", self.select_next_sample_location),
         ])
 
         # CHECK FOR MORE DATA
@@ -46,11 +66,6 @@ class RobotBrain():
             NodeTypes.Action("Continue Mission", lambda: Status.SUCCESS)
         ])
 
-        # ERROR CHECK
-        self.error_check = NodeTypes.Sequence([
-            NodeTypes.Action("Record Loop Error", self.record_loop_error),
-            NodeTypes.Action("Return Home", self.return_home)
-        ])
 
         # MISSION LOOP
         self.mission_loop = NodeTypes.Fallback([
@@ -58,12 +73,6 @@ class RobotBrain():
             self.sample_collection,
             self.check_more_data,
             self.error_check
-        ])
-
-        # TERMINATE
-        self.terminate = NodeTypes.Sequence([
-            NodeTypes.Condition("Mission Complete?", self.mission_done),
-            NodeTypes.Action("Power Off", self.power_off)
         ])
 
         # FULL TREE
