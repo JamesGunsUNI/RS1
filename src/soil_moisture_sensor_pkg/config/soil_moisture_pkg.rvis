@@ -1,0 +1,12 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+Displays:
+  - Class: rviz_default_plugins/Marker
+    Name: Soil Moisture Markers
+    Topic: /soil_moisture_markers
+    Enabled: true
+  - Class: rviz_default_plugins/Map
+    Name: Map
+    Topic: /map
+    Enabled: true

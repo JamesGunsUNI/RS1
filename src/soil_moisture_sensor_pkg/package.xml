@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>soil_moisture_sensor_pkg</name>
+  <version>0.1.0</version>
+  <description>
+    A simulated soil moisture sensor for a mobile robot in Gazebo + ROS 2.
+    Publishes soil moisture readings near trees defined in a YAML configuration file.
+  </description>
+
+  <maintainer email="brayden.t.blake@student.uts.edu.au">Brayden Blake</maintainer>
+  <license>Apache-2.0</license>
+
+  <!-- Build system -->
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- Dependencies -->
+  <depend>rclcpp</depend>
+  <depend>nav_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>yaml-cpp</depend>
+  <depend>visualization_msgs</depend>
+
+
+  <!-- Testing (optional, you can remove if not using) -->
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <!-- Export -->
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
