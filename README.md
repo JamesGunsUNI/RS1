@@ -28,9 +28,12 @@ First install some dependencies:
   sudo apt update
   ```  
 
+
 Now install this package:
 
   ```bash
+  pip install ultralytics
+
   source /opt/ros/humble/setup.bash
   cd ros_ws
   colcon build --packages-select 41068_ignition_bringup --symlink-install
@@ -41,6 +44,19 @@ Now install this package:
 
 * And similarly, the larger world, and with SLAM and navigation:
   ```bash
-  ros2 launch 41068_ignition_bringup 41068_ignition.launch.py slam:=true nav2:=true rviz:=true world:=large_demo #map:=/maps/my_map.yaml
+  #OLD Launch Method
+  #ros2 launch 41068_ignition_bringup 41068_ignition.launch.py slam:=true nav2:=true rviz:=true world:=large_demo #map:=/maps/my_map.yaml
+
+  #Launch UI
   ros2 run tb4_env_ui tb4_env_ui
+
+  #Launch soil moistor sensor
+  ros2 launch ignition_bringup soil_sensor_launch.py
+ 
+  #Laucnh image detection and mission
+  cd env_pkg/src
+  python3 imageRecognition.py #make sure you have pip install ultralytics installed!
+  python3 mission.py
+
+
   ```
