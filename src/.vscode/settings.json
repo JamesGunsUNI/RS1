@@ -1,0 +1,14 @@
+{
+    "python.autoComplete.extraPaths": [
+        "/home/marcus/ros2_ws/install/turtlesim/local/lib/python3.10/dist-packages",
+        "/home/marcus/ros2_ws/build/sjtu_drone_control",
+        "/home/marcus/ros2_ws/install/sjtu_drone_control/lib/python3.10/site-packages",
+        "/home/marcus/ros2_ws/build/sjtu_drone_bringup",
+        "/home/marcus/ros2_ws/install/sjtu_drone_bringup/lib/python3.10/site-packages",
+        "/opt/ros/humble/lib/python3.10/site-packages",
+        "/opt/ros/humble/local/lib/python3.10/dist-packages"
+    ],
+    "files.associations": {
+        "algorithm": "cpp"
+    }
+}
