@@ -37,7 +37,10 @@ Now install this package:
   
   source ~/ros_ws/install/setup.bash
 
+  source install/setup.bash
+
 * And similarly, the larger world, and with SLAM and navigation:
   ```bash
   ros2 launch 41068_ignition_bringup 41068_ignition.launch.py slam:=true nav2:=true rviz:=true world:=large_demo #map:=/maps/my_map.yaml
+  ros2 run tb4_env_ui tb4_env_ui
   ```

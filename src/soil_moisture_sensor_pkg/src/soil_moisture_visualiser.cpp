@@ -123,3 +123,12 @@ void SoilMoistureVisualizer::soilMoistureCallback(const std_msgs::msg::Float32::
               "Updated Tree %d (dist=%.2f m) with moisture %.2f",
               it->id, dist, msg->data);
 }
+
+int main(int argc, char **argv)
+{
+  rclcpp::init(argc, argv);
+  auto node = std::make_shared<SoilMoistureVisualizer>();
+  rclcpp::spin(node);
+  rclcpp::shutdown();
+  return 0;
+}

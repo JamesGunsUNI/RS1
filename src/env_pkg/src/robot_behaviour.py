@@ -95,6 +95,9 @@ class RobotBrain():
     def is_robot_docked(self):
         return self.robot.is_docked
 
+    def charge_robot(self):
+        pass
+
     def is_robot_home(self):
         curr_pos = self.robot.current_pose
         home_pos = self.robot.homeXY
