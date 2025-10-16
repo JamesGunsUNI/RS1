@@ -1,10 +1,12 @@
-trees:
-  - name: tree_1
-    position: [0.0, 3.0, 0.0]
-    moisture: 0.35
-  - name: tree_2
-    position: [3.0, 0.0, 0.0]
-    moisture: 0.62
-  - name: tree_3
-    position: [0.0, -3.0, 0.0]
-    moisture: 0.48
+soil_moisture_sensor:
+  ros__parameters:
+    trees:
+      - name: tree_1
+        position: [0.0, 3.0, 0.0]
+        moisture: 0.35
+      - name: tree_2
+        position: [3.0, 0.0, 0.0]
+        moisture: 0.62
+      - name: tree_3
+        position: [0.0, -3.0, 0.0]
+        moisture: 0.48

@@ -1,4 +1,4 @@
-#include "soil_moisture_sensor/soil_moisture_visualiser.hpp"
+#include "soil_moisture_visualiser.hpp"
 
 int main(int argc, char *argv[]) {
     rclcpp::init(argc, argv);
