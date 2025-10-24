@@ -40,13 +40,14 @@ class ImageRecognition(Node):
         )
         
         # Load YOLO models
-        self.detection_model = YOLO('/home/marcus/41068_ws/src/RS1/src/best.pt')
+        # Need to change the file path
+        self.detection_model = YOLO('/home/marcus/41068_ws/src/RS1/src/ModelV2.pt')
         self.segmentation_model = YOLO('yolo11m-seg.pt')
         
         # Declare parameters for optional features
         self.declare_parameter('publish_detections_msg', True)
         self.declare_parameter('log_detections', True)
-        self.declare_parameter('confidence_threshold', 0.1)
+        self.declare_parameter('confidence_threshold', 0.4)
         
         self.get_logger().info('Image Recognition Node Started')
 
