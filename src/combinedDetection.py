@@ -1,6 +1,7 @@
 import rclpy
 import numpy as np
 import math
+import json
 from rclpy.node import Node
 from ultralytics import YOLO
 from sensor_msgs.msg import Image, LaserScan
@@ -35,6 +36,22 @@ class TrackedObject:
         self.detection_count += 1
         if confidence is not None:
             self.confidence = confidence
+    
+    def to_dict(self):
+        """Convert to dictionary for JSON serialization"""
+        return {
+            'id': self.id,
+            'class_name': self.class_name,
+            'map_x': float(self.map_x),
+            'map_y': float(self.map_y),
+            'distance': float(self.distance),
+            'angle': float(self.angle),
+            'local_x': float(self.x),
+            'local_y': float(self.y),
+            'confidence': float(self.confidence),
+            'detection_count': self.detection_count,
+            'last_seen': self.last_seen
+        }
 
 class CombinedDetectionNode(Node):
     def __init__(self):
@@ -67,9 +84,14 @@ class CombinedDetectionNode(Node):
             String, "/ultralytics/detection/classes", 10
         )
         
-        # Publisher for fused detection results
+        # Publisher for fused detection results (human-readable)
         self.fused_detections_pub = self.create_publisher(
             String, "/fused_detections", 10
+        )
+        
+        # NEW: Publisher for obstacles array (for path planning)
+        self.obstacles_array_pub = self.create_publisher(
+            String, "/obstacles_array", 10
         )
         
         # Publisher for tracked objects (visualization)
@@ -102,7 +124,7 @@ class CombinedDetectionNode(Node):
         self.next_object_id = 0
         self.published_marker_ids = set()  # Track which marker IDs have been published
         
-        self.get_logger().info('Combined Detection Node Started with persistent map markers')
+        self.get_logger().info('Combined Detection Node Started with obstacles array publisher')
 
     def transform_point_to_map(self, x, y):
         try:
@@ -406,11 +428,13 @@ class CombinedDetectionNode(Node):
 
     def _publish_tracked_objects(self):
         if not self.tracked_objects:
+            # Publish empty array when no objects
+            self.obstacles_array_pub.publish(String(data=json.dumps([])))
             return
         
         map_frame = self.get_parameter('map_frame').value
         
-        # Publish text summary
+        # Publish text summary (existing behavior)
         summary_lines = [f"Tracking {len(self.tracked_objects)} objects:"]
         for obj_id, obj in self.tracked_objects.items():
             summary_lines.append(
@@ -421,6 +445,11 @@ class CombinedDetectionNode(Node):
         summary = "\n".join(summary_lines)
         self.fused_detections_pub.publish(String(data=summary))
         self.get_logger().info(summary)
+        
+        # NEW: Publish obstacles array as JSON
+        obstacles_array = [obj.to_dict() for obj in self.tracked_objects.values()]
+        json_string = json.dumps(obstacles_array)
+        self.obstacles_array_pub.publish(String(data=json_string))
         
         # Publish visualization markers
         marker_array = MarkerArray()
