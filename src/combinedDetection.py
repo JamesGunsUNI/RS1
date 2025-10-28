@@ -132,6 +132,7 @@ class CombinedDetectionNode(Node):
         self.declare_parameter('min_depth', 0.1)  # Minimum valid depth (meters)
         self.declare_parameter('max_depth', 10.0)  # Maximum valid depth (meters)
         self.declare_parameter('depth_sample_percentage', 0.3)  # Sample 30% of bbox pixels
+        self.declare_parameter('lidar_match_pixel_threshold', 100)  # Pixel threshold for LiDAR matching
         
         # Data storage
         self.latest_detections = []  # [(class_name, confidence, bbox)]
@@ -184,7 +185,7 @@ class CombinedDetectionNode(Node):
             return None, None
 
     def extract_depth_for_bbox(self, bbox_data, point_cloud_msg):
-        """Extract median depth from point cloud within bounding box"""
+        # Extract median depth from point cloud within bounding box
         if point_cloud_msg is None:
             return None, None, None
         
@@ -379,6 +380,10 @@ class CombinedDetectionNode(Node):
         
         use_depth = self.get_parameter('use_depth_camera').value
         camera_frame = self.get_parameter('camera_frame').value
+        pixel_threshold = self.get_parameter('lidar_match_pixel_threshold').value
+        
+        # Track which detections got valid sensor data
+        successful_fusions = []
         
         # Process each vision detection
         for detection in self.latest_detections:
@@ -386,12 +391,8 @@ class CombinedDetectionNode(Node):
             best_source = None
             best_data = None
             
-            # Route based on object type:
-            # - Trees use LiDAR (tall objects)
-            # - Everything else uses depth camera (rocks, etc.)
-            
             if class_name.lower() == 'tree':
-                # Trees: Use LiDAR only
+                # Trees: Use LiDAR only - must have valid LiDAR match
                 if self.latest_lidar_objects:
                     camera_hfov = self.get_parameter('camera_hfov').value
                     image_width = self.get_parameter('image_width').value
@@ -410,16 +411,26 @@ class CombinedDetectionNode(Node):
                         pixel_x = normalized_pos * image_width
                         
                         # Check if close to detection
-                        if abs(pixel_x - bbox_x) < 100:  # 100 pixel threshold
+                        if abs(pixel_x - bbox_x) < pixel_threshold:
                             # Transform to map coordinates
                             map_x, map_y = self.transform_point_to_map(x, y)
                             
                             if map_x is not None and map_y is not None:
                                 best_source = 'lidar'
                                 best_data = (distance, angle, x, y, map_x, map_y)
+                                self.get_logger().debug(
+                                    f"Tree matched with LiDAR at ({map_x:.2f}, {map_y:.2f})",
+                                    throttle_duration_sec=2.0
+                                )
                                 break
+                
+                if best_data is None:
+                    self.get_logger().debug(
+                        f"Tree detected but no LiDAR match found (waiting for LiDAR data)",
+                        throttle_duration_sec=2.0
+                    )
             else:
-                # Everything else (rocks, etc.): Use depth camera
+                # Everything else (rocks, etc.): Use depth camera - must have valid depth
                 if use_depth and self.latest_depth_cloud is not None:
                     distance, angle, xyz = self.extract_depth_for_bbox(detection, self.latest_depth_cloud)
                     
@@ -431,8 +442,22 @@ class CombinedDetectionNode(Node):
                         if map_x is not None and map_y is not None:
                             best_source = 'depth'
                             best_data = (distance, angle, x, y, map_x, map_y)
+                            self.get_logger().debug(
+                                f"{class_name} matched with depth at ({map_x:.2f}, {map_y:.2f})",
+                                throttle_duration_sec=2.0
+                            )
+                    else:
+                        self.get_logger().debug(
+                            f"{class_name} detected but no valid depth data",
+                            throttle_duration_sec=2.0
+                        )
+                else:
+                    self.get_logger().debug(
+                        f"{class_name} detected but depth camera disabled or no data",
+                        throttle_duration_sec=2.0
+                    )
             
-            # Update tracked object if we have valid data
+            # Only update tracked object if we have valid data from the correct sensor
             if best_data is not None:
                 distance, angle, x, y, map_x, map_y = best_data
                 self._update_tracked_object(
@@ -441,18 +466,19 @@ class CombinedDetectionNode(Node):
                     detection['confidence'],
                     best_source
                 )
-            else:
-                # Log when we can't get position data
-                self.get_logger().debug(
-                    f"Could not get position for {class_name} (source would be: "
-                    f"{'lidar' if class_name.lower() == 'tree' else 'depth'})",
-                    throttle_duration_sec=2.0
-                )
+                successful_fusions.append(class_name)
+        
+        # Log fusion summary
+        if self.latest_detections:
+            self.get_logger().debug(
+                f"Fusion: {len(successful_fusions)}/{len(self.latest_detections)} detections got valid position data",
+                throttle_duration_sec=2.0
+            )
         
         # Clean up old tracked objects
         self._cleanup_old_tracks()
         
-        # Publish tracking results
+        # Publish tracking results (only for objects with valid positions)
         self._publish_tracked_objects()
 
     def _update_tracked_object(self, class_name, distance, angle, x, y, map_x, map_y, confidence, source='unknown'):
@@ -483,14 +509,21 @@ class CombinedDetectionNode(Node):
         if best_match_id is not None:
             # Update existing track
             self.tracked_objects[best_match_id].update(distance, angle, x, y, map_x, map_y, confidence, source)
+            self.get_logger().debug(
+                f"Updated existing {class_name} track ID:{best_match_id}",
+                throttle_duration_sec=2.0
+            )
         else:
-            # Create new track only if no existing object found nearby
+            # Create new track only with valid position data
             new_id = self.next_object_id
             self.next_object_id += 1
             self.tracked_objects[new_id] = TrackedObject(
                 new_id, class_name, distance, angle, x, y, map_x, map_y, source
             )
             self.tracked_objects[new_id].confidence = confidence
+            self.get_logger().info(
+                f"Created new {class_name} track ID:{new_id} at ({map_x:.2f}, {map_y:.2f}) using {source}"
+            )
 
     def _cleanup_old_tracks(self):
         timeout = self.get_parameter('tracking_timeout').value
