@@ -2,16 +2,18 @@ import rclpy
 import numpy as np
 import math
 import json
+import struct
 from rclpy.node import Node
 from ultralytics import YOLO
-from sensor_msgs.msg import Image, LaserScan
+from sensor_msgs.msg import Image, LaserScan, PointCloud2, PointField
+from sensor_msgs_py import point_cloud2
 from std_msgs.msg import String
 from visualization_msgs.msg import Marker, MarkerArray
 from tf2_ros import TransformException, Buffer, TransformListener
 import time
 
 class TrackedObject:
-    def __init__(self, obj_id, class_name, distance, angle, x, y, map_x, map_y):
+    def __init__(self, obj_id, class_name, distance, angle, x, y, map_x, map_y, source='unknown'):
         self.id = obj_id
         self.class_name = class_name
         self.distance = distance
@@ -23,8 +25,9 @@ class TrackedObject:
         self.last_seen = time.time()
         self.confidence = 0.0
         self.detection_count = 1
+        self.source = source  # 'lidar', 'depth', or 'fused'
         
-    def update(self, distance, angle, x, y, map_x, map_y, confidence=None):
+    def update(self, distance, angle, x, y, map_x, map_y, confidence=None, source='unknown'):
         self.distance = distance
         self.angle = angle
         self.x = x
@@ -36,6 +39,7 @@ class TrackedObject:
         self.detection_count += 1
         if confidence is not None:
             self.confidence = confidence
+        self.source = source
     
     def to_dict(self):
         """Convert to dictionary for JSON serialization"""
@@ -50,7 +54,8 @@ class TrackedObject:
             'local_y': float(self.y),
             'confidence': float(self.confidence),
             'detection_count': self.detection_count,
-            'last_seen': self.last_seen
+            'last_seen': self.last_seen,
+            'source': self.source
         }
 
 class CombinedDetectionNode(Node):
@@ -64,6 +69,11 @@ class CombinedDetectionNode(Node):
         # Subscribe to camera
         self.camera_sub = self.create_subscription(
             Image, "/camera/image", self.image_callback, 10
+        )
+        
+        # Subscribe to depth point cloud
+        self.depth_sub = self.create_subscription(
+            PointCloud2, '/camera/depth/points', self.depth_callback, 10
         )
         
         # Subscribe to LiDAR
@@ -89,7 +99,7 @@ class CombinedDetectionNode(Node):
             String, "/fused_detections", 10
         )
         
-        # NEW: Publisher for obstacles array (for path planning)
+        # Publisher for obstacles array (for path planning)
         self.obstacles_array_pub = self.create_publisher(
             String, "/obstacles_array", 10
         )
@@ -114,32 +124,46 @@ class CombinedDetectionNode(Node):
         self.declare_parameter('association_distance_threshold', 1.0)  # meters - increase for re-association
         self.declare_parameter('map_frame', 'map')  # map frame name
         self.declare_parameter('base_frame', 'base_link')  # robot base frame
+        self.declare_parameter('camera_frame', 'camera_link')  # camera frame
         self.declare_parameter('camera_hfov', 1.3962634)  # ~80 degrees in radians
         self.declare_parameter('image_width', 640)
+        self.declare_parameter('image_height', 480)
+        self.declare_parameter('use_depth_camera', True)  # Enable/disable depth camera
+        self.declare_parameter('min_depth', 0.1)  # Minimum valid depth (meters)
+        self.declare_parameter('max_depth', 10.0)  # Maximum valid depth (meters)
+        self.declare_parameter('depth_sample_percentage', 0.3)  # Sample 30% of bbox pixels
         
         # Data storage
         self.latest_detections = []  # [(class_name, confidence, bbox)]
         self.latest_lidar_objects = []  # [(distance, angle, x, y)]
+        self.latest_depth_cloud = None  # Store latest point cloud
         self.tracked_objects = {}  # {id: TrackedObject}
         self.next_object_id = 0
         self.published_marker_ids = set()  # Track which marker IDs have been published
         
-        self.get_logger().info('Combined Detection Node Started with obstacles array publisher')
+        self.get_logger().info('Combined Detection Node Started with depth camera integration')
 
-    def transform_point_to_map(self, x, y):
+    def depth_callback(self, msg):
+        """Store the latest depth point cloud for fusion"""
+        self.latest_depth_cloud = msg
+
+    def transform_point_to_map(self, x, y, z=0.0, source_frame=None):
+        """Transform a point from source frame to map frame"""
         try:
-            base_frame = self.get_parameter('base_frame').value
+            if source_frame is None:
+                source_frame = self.get_parameter('base_frame').value
+            
             map_frame = self.get_parameter('map_frame').value
             
             # Get latest transform
             transform = self.tf_buffer.lookup_transform(
                 map_frame,
-                base_frame,
+                source_frame,
                 rclpy.time.Time(),  # Time=0 means "get latest available"
                 timeout=rclpy.duration.Duration(seconds=1.0)
             )
             
-            # Convert quaternion to yaw angle
+            # Convert quaternion to rotation matrix (simplified for 2D case)
             qx = transform.transform.rotation.x
             qy = transform.transform.rotation.y
             qz = transform.transform.rotation.z
@@ -156,8 +180,67 @@ class CombinedDetectionNode(Node):
             return map_x, map_y
             
         except (TransformException, Exception) as e:
-            self.get_logger().warn(f'Could not transform point to map: {str(e)}', throttle_duration_sec=5.0)
+            self.get_logger().warn(f'Could not transform point to map from {source_frame}: {str(e)}', throttle_duration_sec=5.0)
             return None, None
+
+    def extract_depth_for_bbox(self, bbox_data, point_cloud_msg):
+        """Extract median depth from point cloud within bounding box"""
+        if point_cloud_msg is None:
+            return None, None, None
+        
+        try:
+            # Get bbox parameters
+            center_x = int(bbox_data['bbox_center_x'])
+            center_y = int(bbox_data['bbox_center_y'])
+            width = int(bbox_data['bbox_width'])
+            height = int(bbox_data['bbox_height'])
+            
+            # Calculate bbox boundaries
+            x_min = max(0, int(center_x - width/2))
+            x_max = min(point_cloud_msg.width, int(center_x + width/2))
+            y_min = max(0, int(center_y - height/2))
+            y_max = min(point_cloud_msg.height, int(center_y + height/2))
+            
+            # Sample points from the bounding box
+            sample_rate = self.get_parameter('depth_sample_percentage').value
+            min_depth = self.get_parameter('min_depth').value
+            max_depth = self.get_parameter('max_depth').value
+            
+            valid_points = []
+            
+            # Read point cloud data
+            for point in point_cloud2.read_points(
+                point_cloud_msg, 
+                field_names=("x", "y", "z"),
+                skip_nans=True,
+                uvs=[(x, y) for x in range(x_min, x_max, max(1, int(1/sample_rate)))
+                     for y in range(y_min, y_max, max(1, int(1/sample_rate)))]
+            ):
+                x, y, z = point
+                distance = math.sqrt(x*x + y*y + z*z)
+                
+                # Filter valid depths
+                if min_depth <= distance <= max_depth and not math.isnan(distance):
+                    valid_points.append((x, y, z, distance))
+            
+            if not valid_points:
+                return None, None, None
+            
+            # Use median to avoid outliers
+            valid_points.sort(key=lambda p: p[3])
+            median_idx = len(valid_points) // 2
+            median_point = valid_points[median_idx]
+            
+            x, y, z, distance = median_point
+            
+            # Calculate angle in robot frame (camera typically points forward)
+            angle = math.atan2(y, x)
+            
+            return distance, angle, (x, y, z)
+            
+        except Exception as e:
+            self.get_logger().warn(f'Error extracting depth: {str(e)}', throttle_duration_sec=5.0)
+            return None, None, None
 
     def image_callback(self, data):
         # Convert ROS Image to numpy array
@@ -212,7 +295,7 @@ class CombinedDetectionNode(Node):
             if log_detections:
                 self.get_logger().info(f"Vision detected {len(boxes)} objects: {names}")
         
-        # Perform fusion with LiDAR data
+        # Perform fusion with depth and LiDAR data
         self._fuse_detections()
 
     def laser_callback(self, msg):
@@ -291,48 +374,80 @@ class CombinedDetectionNode(Node):
         return object_data
 
     def _fuse_detections(self):
-        if not self.latest_lidar_objects or not self.latest_detections:
+        if not self.latest_detections:
             return
         
-        camera_hfov = self.get_parameter('camera_hfov').value
-        image_width = self.get_parameter('image_width').value
+        use_depth = self.get_parameter('use_depth_camera').value
+        camera_frame = self.get_parameter('camera_frame').value
         
-        # Associate LiDAR objects with vision detections
-        for lidar_obj in self.latest_lidar_objects:
-            distance, angle, x, y = lidar_obj
+        # Process each vision detection
+        for detection in self.latest_detections:
+            class_name = detection['class_name']
+            best_source = None
+            best_data = None
             
-            # Convert LiDAR angle to image x coordinate
-            # Assuming camera is centered and aligned with LiDAR
-            if abs(angle) > camera_hfov / 2:
-                continue  # Object outside camera FOV
+            # Route based on object type:
+            # - Trees use LiDAR (tall objects)
+            # - Everything else uses depth camera (rocks, etc.)
             
-            # Map angle to pixel position
-            normalized_pos = (angle + camera_hfov/2) / camera_hfov
-            pixel_x = normalized_pos * image_width
+            if class_name.lower() == 'tree':
+                # Trees: Use LiDAR only
+                if self.latest_lidar_objects:
+                    camera_hfov = self.get_parameter('camera_hfov').value
+                    image_width = self.get_parameter('image_width').value
+                    bbox_x = detection['bbox_center_x']
+                    
+                    # Find matching LiDAR object
+                    for lidar_obj in self.latest_lidar_objects:
+                        distance, angle, x, y = lidar_obj
+                        
+                        # Check if LiDAR object is in camera FOV
+                        if abs(angle) > camera_hfov / 2:
+                            continue
+                        
+                        # Map angle to pixel position
+                        normalized_pos = (angle + camera_hfov/2) / camera_hfov
+                        pixel_x = normalized_pos * image_width
+                        
+                        # Check if close to detection
+                        if abs(pixel_x - bbox_x) < 100:  # 100 pixel threshold
+                            # Transform to map coordinates
+                            map_x, map_y = self.transform_point_to_map(x, y)
+                            
+                            if map_x is not None and map_y is not None:
+                                best_source = 'lidar'
+                                best_data = (distance, angle, x, y, map_x, map_y)
+                                break
+            else:
+                # Everything else (rocks, etc.): Use depth camera
+                if use_depth and self.latest_depth_cloud is not None:
+                    distance, angle, xyz = self.extract_depth_for_bbox(detection, self.latest_depth_cloud)
+                    
+                    if distance is not None and xyz is not None:
+                        x, y, z = xyz
+                        # Transform from camera frame to map frame
+                        map_x, map_y = self.transform_point_to_map(x, y, z, camera_frame)
+                        
+                        if map_x is not None and map_y is not None:
+                            best_source = 'depth'
+                            best_data = (distance, angle, x, y, map_x, map_y)
             
-            # Find closest vision detection
-            best_match = None
-            best_distance = float('inf')
-            
-            for detection in self.latest_detections:
-                bbox_x = detection['bbox_center_x']
-                pixel_diff = abs(pixel_x - bbox_x)
-                
-                if pixel_diff < best_distance:
-                    best_distance = pixel_diff
-                    best_match = detection
-            
-            # If match found, update or create tracked object
-            if best_match and best_distance < 100:  # 100 pixel threshold
-                # Transform to map coordinates
-                map_x, map_y = self.transform_point_to_map(x, y)
-                
-                if map_x is not None and map_y is not None:
-                    self._update_tracked_object(
-                        best_match['class_name'],
-                        distance, angle, x, y, map_x, map_y,
-                        best_match['confidence']
-                    )
+            # Update tracked object if we have valid data
+            if best_data is not None:
+                distance, angle, x, y, map_x, map_y = best_data
+                self._update_tracked_object(
+                    detection['class_name'],
+                    distance, angle, x, y, map_x, map_y,
+                    detection['confidence'],
+                    best_source
+                )
+            else:
+                # Log when we can't get position data
+                self.get_logger().debug(
+                    f"Could not get position for {class_name} (source would be: "
+                    f"{'lidar' if class_name.lower() == 'tree' else 'depth'})",
+                    throttle_duration_sec=2.0
+                )
         
         # Clean up old tracked objects
         self._cleanup_old_tracks()
@@ -340,7 +455,7 @@ class CombinedDetectionNode(Node):
         # Publish tracking results
         self._publish_tracked_objects()
 
-    def _update_tracked_object(self, class_name, distance, angle, x, y, map_x, map_y, confidence):
+    def _update_tracked_object(self, class_name, distance, angle, x, y, map_x, map_y, confidence, source='unknown'):
         # Convert to Python floats to avoid numpy type issues
         distance = float(distance)
         angle = float(angle)
@@ -367,13 +482,13 @@ class CombinedDetectionNode(Node):
         
         if best_match_id is not None:
             # Update existing track
-            self.tracked_objects[best_match_id].update(distance, angle, x, y, map_x, map_y, confidence)
+            self.tracked_objects[best_match_id].update(distance, angle, x, y, map_x, map_y, confidence, source)
         else:
             # Create new track only if no existing object found nearby
             new_id = self.next_object_id
             self.next_object_id += 1
             self.tracked_objects[new_id] = TrackedObject(
-                new_id, class_name, distance, angle, x, y, map_x, map_y
+                new_id, class_name, distance, angle, x, y, map_x, map_y, source
             )
             self.tracked_objects[new_id].confidence = confidence
 
@@ -439,14 +554,14 @@ class CombinedDetectionNode(Node):
         for obj_id, obj in self.tracked_objects.items():
             summary_lines.append(
                 f"  ID:{obj.id} {obj.class_name} @ {obj.distance:.2f}m "
-                f"map:({obj.map_x:.2f}, {obj.map_y:.2f}) conf:{obj.confidence:.2f}"
+                f"map:({obj.map_x:.2f}, {obj.map_y:.2f}) conf:{obj.confidence:.2f} src:{obj.source}"
             )
         
         summary = "\n".join(summary_lines)
         self.fused_detections_pub.publish(String(data=summary))
         self.get_logger().info(summary)
         
-        # NEW: Publish obstacles array as JSON
+        # Publish obstacles array as JSON
         obstacles_array = [obj.to_dict() for obj in self.tracked_objects.values()]
         json_string = json.dumps(obstacles_array)
         self.obstacles_array_pub.publish(String(data=json_string))
@@ -474,9 +589,19 @@ class CombinedDetectionNode(Node):
             marker.scale.y = 0.3
             marker.scale.z = 0.3
             
-            marker.color.r = 0.0
-            marker.color.g = 1.0
-            marker.color.b = 0.0
+            # Color based on source
+            if obj.source == 'depth':
+                marker.color.r = 0.0
+                marker.color.g = 0.0
+                marker.color.b = 1.0  # Blue for depth camera
+            elif obj.source == 'lidar':
+                marker.color.r = 0.0
+                marker.color.g = 1.0  # Green for LiDAR
+                marker.color.b = 0.0
+            else:
+                marker.color.r = 1.0  # Red for unknown
+                marker.color.g = 1.0
+                marker.color.b = 0.0
             marker.color.a = 0.8
             
             marker_array.markers.append(marker)
@@ -501,7 +626,7 @@ class CombinedDetectionNode(Node):
             text_marker.color.b = 1.0
             text_marker.color.a = 1.0
             
-            text_marker.text = f"{obj.class_name}\n{obj.distance:.1f}m"
+            text_marker.text = f"{obj.class_name}\n{obj.distance:.1f}m\n({obj.source})"
             
             marker_array.markers.append(text_marker)
             current_marker_ids.add(obj.id + 1000)
