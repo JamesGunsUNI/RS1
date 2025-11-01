@@ -121,7 +121,7 @@ class CombinedDetectionNode(Node):
         self.declare_parameter('min_points_per_object', 1)
         self.declare_parameter('max_gap_distance', 0.3)
         self.declare_parameter('tracking_timeout', 0.0)  # seconds - 0 means no timeout (infinite)
-        self.declare_parameter('association_distance_threshold', 1.0)  # meters - increase for re-association
+        self.declare_parameter('association_distance_threshold', 2.5)  # meters - distance to merge detections
         self.declare_parameter('map_frame', 'map')  # map frame name
         self.declare_parameter('base_frame', 'base_link')  # robot base frame
         self.declare_parameter('camera_frame', 'camera_link')  # camera frame
@@ -385,6 +385,9 @@ class CombinedDetectionNode(Node):
         # Track which detections got valid sensor data
         successful_fusions = []
         
+        # Track which LiDAR objects have been matched to prevent double-matching
+        matched_lidar_indices = set()
+        
         # Process each vision detection
         for detection in self.latest_detections:
             class_name = detection['class_name']
@@ -398,8 +401,16 @@ class CombinedDetectionNode(Node):
                     image_width = self.get_parameter('image_width').value
                     bbox_x = detection['bbox_center_x']
                     
-                    # Find matching LiDAR object
-                    for lidar_obj in self.latest_lidar_objects:
+                    best_lidar_match = None
+                    best_pixel_diff = float('inf')
+                    best_lidar_idx = None
+                    
+                    # Find best matching LiDAR object
+                    for idx, lidar_obj in enumerate(self.latest_lidar_objects):
+                        # Skip if already matched
+                        if idx in matched_lidar_indices:
+                            continue
+                        
                         distance, angle, x, y = lidar_obj
                         
                         # Check if LiDAR object is in camera FOV
@@ -410,19 +421,28 @@ class CombinedDetectionNode(Node):
                         normalized_pos = (angle + camera_hfov/2) / camera_hfov
                         pixel_x = normalized_pos * image_width
                         
-                        # Check if close to detection
-                        if abs(pixel_x - bbox_x) < pixel_threshold:
-                            # Transform to map coordinates
-                            map_x, map_y = self.transform_point_to_map(x, y)
-                            
-                            if map_x is not None and map_y is not None:
-                                best_source = 'lidar'
-                                best_data = (distance, angle, x, y, map_x, map_y)
-                                self.get_logger().debug(
-                                    f"Tree matched with LiDAR at ({map_x:.2f}, {map_y:.2f})",
-                                    throttle_duration_sec=2.0
-                                )
-                                break
+                        # Check if close to detection and find closest match
+                        pixel_diff = abs(pixel_x - bbox_x)
+                        if pixel_diff < pixel_threshold and pixel_diff < best_pixel_diff:
+                            best_pixel_diff = pixel_diff
+                            best_lidar_match = lidar_obj
+                            best_lidar_idx = idx
+                    
+                    # Use best match if found
+                    if best_lidar_match is not None:
+                        distance, angle, x, y = best_lidar_match
+                        
+                        # Transform to map coordinates
+                        map_x, map_y = self.transform_point_to_map(x, y)
+                        
+                        if map_x is not None and map_y is not None:
+                            best_source = 'lidar'
+                            best_data = (distance, angle, x, y, map_x, map_y)
+                            matched_lidar_indices.add(best_lidar_idx)
+                            self.get_logger().debug(
+                                f"Tree matched with LiDAR at ({map_x:.2f}, {map_y:.2f}), pixel diff: {best_pixel_diff:.1f}",
+                                throttle_duration_sec=2.0
+                            )
                 
                 if best_data is None:
                     self.get_logger().debug(
@@ -493,28 +513,47 @@ class CombinedDetectionNode(Node):
         
         threshold = self.get_parameter('association_distance_threshold').value
         
+        # For trees, use a larger threshold since they're static and position estimates can vary
+        if class_name.lower() == 'tree':
+            threshold = max(threshold, 2.5)  # At least 2.5m for trees
+        
         best_match_id = None
         best_match_dist = float('inf')
         
+        # Find closest existing object of the same class
         for obj_id, tracked_obj in self.tracked_objects.items():
             if tracked_obj.class_name == class_name:
                 dx = map_x - tracked_obj.map_x
                 dy = map_y - tracked_obj.map_y
                 dist = math.sqrt(dx*dx + dy*dy)
                 
-                if dist < best_match_dist and dist < threshold:
+                if dist < best_match_dist:
                     best_match_dist = dist
                     best_match_id = obj_id
         
-        if best_match_id is not None:
+        # Only create new track if no match within threshold OR no existing tracks of this class
+        if best_match_id is not None and best_match_dist < threshold:
             # Update existing track
             self.tracked_objects[best_match_id].update(distance, angle, x, y, map_x, map_y, confidence, source)
             self.get_logger().debug(
-                f"Updated existing {class_name} track ID:{best_match_id}",
+                f"Updated existing {class_name} track ID:{best_match_id} (dist: {best_match_dist:.2f}m)",
                 throttle_duration_sec=2.0
             )
         else:
-            # Create new track only with valid position data
+            # Check if we should really create a new track
+            if best_match_id is not None:
+                # If closest match is relatively close but outside threshold, log a warning
+                if best_match_dist < threshold * 2:
+                    self.get_logger().warn(
+                        f"Creating new {class_name} despite nearby track at {best_match_dist:.2f}m "
+                        f"(threshold: {threshold:.2f}m). Consider increasing association_distance_threshold.",
+                        throttle_duration_sec=5.0
+                    )
+                else:
+                    self.get_logger().info(
+                        f"Creating new {class_name} track - nearest existing is {best_match_dist:.2f}m away"
+                    )
+            
             new_id = self.next_object_id
             self.next_object_id += 1
             self.tracked_objects[new_id] = TrackedObject(
@@ -527,17 +566,18 @@ class CombinedDetectionNode(Node):
 
     def _cleanup_old_tracks(self):
         timeout = self.get_parameter('tracking_timeout').value
-        
-        # If timeout is 0, never remove tracks
-        if timeout <= 0:
-            return
-        
         current_time = time.time()
         
         to_remove = []
-        for obj_id, tracked_obj in self.tracked_objects.items():
-            if current_time - tracked_obj.last_seen > timeout:
-                to_remove.append(obj_id)
+        
+        # Remove tracks that haven't been seen recently (only if timeout > 0)
+        if timeout > 0:
+            for obj_id, tracked_obj in self.tracked_objects.items():
+                if current_time - tracked_obj.last_seen > timeout:
+                    to_remove.append(obj_id)
+        
+        # Merge duplicate tracks that are too close together
+        self._merge_duplicate_tracks()
         
         # Delete markers for removed objects
         if to_remove:
@@ -547,6 +587,69 @@ class CombinedDetectionNode(Node):
             del self.tracked_objects[obj_id]
             self.published_marker_ids.discard(obj_id)
             self.published_marker_ids.discard(obj_id + 1000)  # text marker
+    
+    def _merge_duplicate_tracks(self):
+        """Merge tracks that are suspiciously close to each other"""
+        merge_threshold = 1.0  # Merge tracks within 1 meter
+        
+        to_remove = []
+        
+        obj_list = list(self.tracked_objects.items())
+        
+        for i in range(len(obj_list)):
+            obj_id_i, obj_i = obj_list[i]
+            
+            if obj_id_i in to_remove:
+                continue
+            
+            for j in range(i + 1, len(obj_list)):
+                obj_id_j, obj_j = obj_list[j]
+                
+                if obj_id_j in to_remove:
+                    continue
+                
+                # Only merge objects of the same class
+                if obj_i.class_name != obj_j.class_name:
+                    continue
+                
+                # Calculate distance between tracks
+                dx = obj_i.map_x - obj_j.map_x
+                dy = obj_i.map_y - obj_j.map_y
+                dist = math.sqrt(dx*dx + dy*dy)
+                
+                # If tracks are very close, merge them
+                if dist < merge_threshold:
+                    # Keep the one with more detections, merge into it
+                    if obj_i.detection_count >= obj_j.detection_count:
+                        # Merge j into i (weighted average)
+                        weight = 0.5
+                        obj_i.map_x = obj_i.map_x * (1 - weight) + obj_j.map_x * weight
+                        obj_i.map_y = obj_i.map_y * (1 - weight) + obj_j.map_y * weight
+                        obj_i.detection_count += obj_j.detection_count
+                        to_remove.append(obj_id_j)
+                        self.get_logger().info(
+                            f"Merged duplicate {obj_i.class_name} tracks: ID:{obj_id_j} -> ID:{obj_id_i} (dist: {dist:.2f}m)"
+                        )
+                    else:
+                        # Merge i into j
+                        weight = 0.5
+                        obj_j.map_x = obj_j.map_x * (1 - weight) + obj_i.map_x * weight
+                        obj_j.map_y = obj_j.map_y * (1 - weight) + obj_i.map_y * weight
+                        obj_j.detection_count += obj_i.detection_count
+                        to_remove.append(obj_id_i)
+                        self.get_logger().info(
+                            f"Merged duplicate {obj_j.class_name} tracks: ID:{obj_id_i} -> ID:{obj_id_j} (dist: {dist:.2f}m)"
+                        )
+                        break  # obj_i is removed, move to next i
+        
+        # Remove merged tracks
+        if to_remove:
+            self._delete_markers(to_remove)
+            for obj_id in to_remove:
+                if obj_id in self.tracked_objects:
+                    del self.tracked_objects[obj_id]
+                self.published_marker_ids.discard(obj_id)
+                self.published_marker_ids.discard(obj_id + 1000)
 
     def _delete_markers(self, obj_ids):
         map_frame = self.get_parameter('map_frame').value
