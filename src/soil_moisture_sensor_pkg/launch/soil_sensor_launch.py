@@ -10,7 +10,7 @@ def generate_launch_description():
     """Generate launch description for soil moisture sensor system."""
     
     try:
-        pkg_share = get_package_share_directory('ignition_bringup')
+        pkg_share = get_package_share_directory('soil_moisture_sensor_pkg')
     except Exception:
         pkg_share = ''
     
@@ -83,7 +83,7 @@ def generate_launch_description():
     
     # Soil Moisture Sensor Node
     sensor_node = Node(
-        package='ignition_bringup',
+        package='soil_moisture_sensor_pkg',
         executable='soil_moisture_sensor',
         name='soil_moisture_sensor',
         output='screen',
@@ -102,7 +102,7 @@ def generate_launch_description():
     
     # Soil Moisture Visualizer Node
     visualizer_node = Node(
-        package='ignition_bringup',
+        package='soil_moisture_sensor_pkg',
         executable='soil_moisture_visualizer',
         name='soil_moisture_visualizer',
         output='screen',

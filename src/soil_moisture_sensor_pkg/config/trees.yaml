@@ -1,12 +1,85 @@
-soil_moisture_sensor:
-  ros__parameters:
-    trees:
-      - name: tree_1
-        position: [0.0, 3.0, 0.0]
-        moisture: 0.35
-      - name: tree_2
-        position: [3.0, 0.0, 0.0]
-        moisture: 0.62
-      - name: tree_3
-        position: [0.0, -3.0, 0.0]
-        moisture: 0.48
+trees:
+  - id: 1
+    name: oak_1
+    x: -4.77393
+    y: 12.2995
+    z: -0.3 
+    moisture: 0.35
+  - id: 2
+    name: oak_2
+    x: 5.99444 
+    y: -4.95498 
+    z: -0.3
+    moisture: 0.62
+  - id: 3
+    name: oak_3
+    x: -9.12426 
+    y: -11.2689 
+    z: -0.3
+    moisture: 0.48 
+  - id: 4
+    name: oak_4
+    x: 4.21788
+    y: -1.41417
+    z: -0.3
+    moisture: 0.8
+  - id: 5
+    name: oak_5
+    x: -6.26553 
+    y: 5.00575 
+    z: -0.3
+    moisture: 0.29
+  - id: 6
+    name: oak_6
+    x: -4.33701 
+    y: 1.32854 
+    z: -0.3
+    moisture: 0.76
+  - id: 7
+    name: oak_7
+    x: -0.620372 
+    y: 10 
+    z: -0.3
+    moisture: 0.33
+  - id: 8
+    name: oak_8
+    x: 3.54698 
+    y: 5
+    z: -0.3
+    moisture: 0.50
+  - id: 9
+    name: pine_1
+    x: 6.05721
+    y: 9.78933
+    z: 0
+    moisture: 0.9
+  - id: 10
+    name: pine_2
+    x: -10.0184 
+    y: 8.85188
+    z: 0
+    moisture: 0.81
+  - id: 11
+    name: pine_3
+    x: -4.62343 
+    y: -12.5618
+    z: 0
+    moisture: 0.74
+  - id: 12
+    name: pine_4
+    x: 7.08738
+    y: 1.33612
+    z: 0
+    moisture: 0.55
+  - id: 13
+    name: pine_5
+    x: -4.64898 
+    y: -3.0329
+    z: 0
+    moisture: 0.61
+  - id: 14
+    name: pine_6
+    x: -2.27195 
+    y: -8.68441
+    z: 0
+    moisture: 0.78
