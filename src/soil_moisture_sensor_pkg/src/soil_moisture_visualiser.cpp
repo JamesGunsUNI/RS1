@@ -44,7 +44,7 @@ SoilMoistureVisualizer::SoilMoistureVisualizer()
     this->declare_parameter("map_max_x", 10.0);
     this->declare_parameter("map_min_y", -10.0);
     this->declare_parameter("map_max_y", 10.0);
-    this->declare_parameter("yaml_file", "trees_moisture.yaml");
+    this->declare_parameter("yaml_file", "trees.yaml");
     
     // ===== GET PARAMETER VALUES =====
     this->get_parameter("sampling_radius", sampling_radius_);
@@ -91,7 +91,7 @@ SoilMoistureVisualizer::SoilMoistureVisualizer()
     // ===== LOAD TREE POSITIONS =====
     std::string pkg_share;
     try {
-        pkg_share = ament_index_cpp::get_package_share_directory("ignition_bringup");
+        pkg_share = ament_index_cpp::get_package_share_directory("soil_moisture_sensor_pkg");
         RCLCPP_INFO(this->get_logger(), "Found package at: %s", pkg_share.c_str());
     } catch (const std::exception &e) {
         RCLCPP_ERROR(this->get_logger(), "Failed to find package: %s", e.what());

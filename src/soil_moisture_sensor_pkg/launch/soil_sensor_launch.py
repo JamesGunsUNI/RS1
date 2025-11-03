@@ -35,7 +35,7 @@ def generate_launch_description():
     
     yaml_file_arg = DeclareLaunchArgument(
         'yaml_file',
-        default_value='trees_moisture.yaml',
+        default_value='trees.yaml',
         description='Name of YAML file with tree data (must be in config/ directory)'
     )
     
