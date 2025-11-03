@@ -51,7 +51,7 @@ Now install this package:
   ros2 run tb4_env_ui tb4_env_ui
 
   #Launch soil moistor sensor
-  ros2 launch ignition_bringup soil_sensor_launch.py
+  ros2 launch soil_moisture_sensor_pkg soil_sensor_launch.py
  
   #Laucnh image detection and mission
   cd env_pkg/src
