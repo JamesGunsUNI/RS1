@@ -1,10 +1,9 @@
-#!/usr/bin/env python3
-
 import rclpy
-from rclpy.node import Node
-from sensor_msgs.msg import LaserScan
 import numpy as np
 import math
+
+from rclpy.node import Node
+from sensor_msgs.msg import LaserScan
 
 class ObjectCounter(Node):
     def __init__(self):
@@ -13,7 +12,7 @@ class ObjectCounter(Node):
             LaserScan, '/scan', self.laser_callback, 10
         )
         
-        # Parameters for object detection
+        # Parameters
         self.min_distance = 0.1  # Minimum distance to consider (meters)
         self.max_distance = 10.0  # Maximum distance to consider (meters)
         self.min_points_per_object = 1  # Minimum points to consider as an object
@@ -27,7 +26,7 @@ class ObjectCounter(Node):
             valid_ranges = ranges[(ranges >= self.min_distance) & 
                                  (ranges <= self.max_distance) & 
                                  (ranges != float('inf')) & 
-                                 (~np.isnan(ranges))]
+                            rospy     (~np.isnan(ranges))]
             
             if len(valid_ranges) == 0:
                 print("No objects detected")
@@ -39,6 +38,7 @@ class ObjectCounter(Node):
             
             # Create list of valid points with their angles and distances
             valid_points = []
+            
             for i, range_val in enumerate(ranges):
                 if (range_val >= self.min_distance and 
                     range_val <= self.max_distance and 

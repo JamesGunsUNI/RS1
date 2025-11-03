@@ -27,9 +27,10 @@ class TrackedObject:
         self.detection_count = 1
         self.source = source
         self.confirmed = False
+        self.distance_history = [distance]  # Track distance consistency
+        self.is_stable = False  # Only show marker when stable
         
     def update_position(self, distance, angle, x, y, map_x, map_y):
-        """Update position from LiDAR"""
         self.distance = distance
         self.angle = angle
         self.x = x
@@ -40,8 +41,23 @@ class TrackedObject:
         self.last_seen = time.time()
         self.detection_count += 1
         
+        # Track distance history (keep last 5 readings)
+        self.distance_history.append(distance)
+        if len(self.distance_history) > 5:
+            self.distance_history.pop(0)
+        
+        # Check if distance is stable (not jumping around)
+        if len(self.distance_history) >= 3:
+            avg_distance = sum(self.distance_history) / len(self.distance_history)
+            max_deviation = max(abs(d - avg_distance) for d in self.distance_history)
+            
+            # Object is stable if distance doesn't vary more than 30cm
+            if max_deviation < 0.3:
+                self.is_stable = True
+            else:
+                self.is_stable = False
+        
     def confirm_with_camera(self, class_name, confidence):
-        """Confirm and identify object with camera"""
         self.class_name = class_name
         self.confidence = confidence
         self.confirmed = True
@@ -49,7 +65,6 @@ class TrackedObject:
         self.last_seen = time.time()
     
     def to_dict(self):
-        """Convert to dictionary for JSON serialization"""
         return {
             'id': self.id,
             'class_name': self.class_name,
@@ -122,6 +137,17 @@ class CombinedDetectionNode(Node):
         self.declare_parameter('image_width', 640)
         self.declare_parameter('image_height', 480)
         
+        # Wall filtering parameters
+        self.declare_parameter('enable_wall_filter', True)
+        self.declare_parameter('wall_min_points', 20)  # Walls have many consecutive points
+        self.declare_parameter('wall_max_width', 5.0)  # Walls are long/wide
+        self.declare_parameter('wall_straightness_threshold', 0.95)  # How straight (0-1)
+        
+        # Consistency filtering parameters
+        self.declare_parameter('require_stable_detections', True)
+        self.declare_parameter('min_stable_detections', 3)  # Need 3+ consistent readings
+        self.declare_parameter('max_distance_deviation', 0.3)  # Max 30cm variation
+        
         # Data storage
         self.latest_detections = []
         self.tracked_objects = {}
@@ -131,7 +157,6 @@ class CombinedDetectionNode(Node):
         self.get_logger().info('Two-Stage Detection Node Started: LiDAR scans → Camera confirms')
 
     def transform_point_to_map(self, x, y, z=0.0, source_frame=None):
-        """Transform a point from source frame to map frame"""
         try:
             if source_frame is None:
                 source_frame = self.get_parameter('base_frame').value
@@ -162,7 +187,6 @@ class CombinedDetectionNode(Node):
             return None, None
 
     def laser_callback(self, msg):
-        """Stage 1: LiDAR detects potential objects"""
         try:
             min_distance = self.get_parameter('min_lidar_distance').value
             max_distance = self.get_parameter('max_lidar_distance').value
@@ -199,7 +223,6 @@ class CombinedDetectionNode(Node):
             self.get_logger().error(f'Error processing laser scan: {str(e)}')
 
     def _count_objects_with_positions(self, points, max_gap, min_points):
-        """Group nearby LiDAR points into objects"""
         if not points:
             return []
         
@@ -230,6 +253,12 @@ class CombinedDetectionNode(Node):
         if len(current_object) >= min_points:
             objects.append(current_object)
         
+        # Get wall filtering parameters
+        enable_wall_filter = self.get_parameter('enable_wall_filter').value
+        wall_min_points = self.get_parameter('wall_min_points').value
+        wall_max_width = self.get_parameter('wall_max_width').value
+        wall_straightness_threshold = self.get_parameter('wall_straightness_threshold').value
+        
         object_data = []
         for obj in objects:
             avg_x = sum(p[0] for p in obj) / len(obj)
@@ -243,15 +272,58 @@ class CombinedDetectionNode(Node):
             width = math.sqrt((max(x_coords) - min(x_coords))**2 + 
                              (max(y_coords) - min(y_coords))**2)
             
+            # Filter out very small objects (likely noise) unless they're close
             if width < 0.1 and avg_distance > 2.0:
+                continue
+            
+            # Wall detection and filtering
+            if enable_wall_filter and self._is_wall(obj, num_points, width, wall_min_points, 
+                                                     wall_max_width, wall_straightness_threshold):
+                self.get_logger().debug(
+                    f"Filtered out wall: {num_points} points, width={width:.2f}m",
+                    throttle_duration_sec=5.0
+                )
                 continue
             
             object_data.append((avg_distance, avg_angle, avg_x, avg_y, num_points))
         
         return object_data
+    
+    def _is_wall(self, points, num_points, width, wall_min_points, wall_max_width, straightness_threshold):
+        # Walls typically have many points
+        if num_points < wall_min_points:
+            return False
+        
+        # Walls are long
+        if width < wall_max_width:
+            return False
+        
+        # Check straightness using linear regression
+        x_coords = np.array([p[0] for p in points])
+        y_coords = np.array([p[1] for p in points])
+        
+        # Fit a line to the points
+        if len(x_coords) < 3:
+            return False
+        
+        # Calculate correlation coefficient (measure of straightness)
+        # R² close to 1.0 means points are very straight (like a wall)
+        try:
+            # Handle vertical lines
+            if np.std(x_coords) < 0.01:  # Nearly vertical
+                r_squared = np.corrcoef(y_coords, np.arange(len(y_coords)))[0, 1] ** 2
+            else:
+                r_squared = np.corrcoef(x_coords, y_coords)[0, 1] ** 2
+            
+            # If points form a very straight line with many points, it's likely a wall
+            if r_squared > straightness_threshold:
+                return True
+        except:
+            pass
+        
+        return False
 
     def _update_from_lidar(self, lidar_objects):
-        """Update tracked objects from LiDAR - ONLY update existing, don't spam new ones"""
         threshold = self.get_parameter('association_distance_threshold').value
         matched_object_ids = set()
         
@@ -305,7 +377,6 @@ class CombinedDetectionNode(Node):
                     self.get_logger().debug(f"New object ID:{new_id} @ ({map_x:.2f}, {map_y:.2f})")
 
     def image_callback(self, data):
-        """Stage 2: Camera confirms objects"""
         array = np.array(data.data, dtype=np.uint8).reshape(data.height, data.width, -1)
         conf_threshold = self.get_parameter('confidence_threshold').value
         log_detections = self.get_parameter('log_detections').value
@@ -356,7 +427,6 @@ class CombinedDetectionNode(Node):
         self._publish_tracked_objects()
 
     def _match_camera_to_lidar(self, detections):
-        """Match camera detections to LiDAR objects"""
         camera_hfov = self.get_parameter('camera_hfov').value
         image_width = self.get_parameter('image_width').value
         max_match_distance = 10.0
@@ -445,7 +515,6 @@ class CombinedDetectionNode(Node):
                     )
 
     def _cleanup_old_tracks(self):
-        """Remove old unconfirmed objects"""
         tracking_timeout = self.get_parameter('tracking_timeout').value
         confirmed_timeout = self.get_parameter('confirmed_timeout').value
         current_time = time.time()
@@ -473,7 +542,6 @@ class CombinedDetectionNode(Node):
             self.published_marker_ids.discard(obj_id + 1000)
 
     def _delete_markers(self, obj_ids):
-        """Delete markers for removed objects"""
         map_frame = self.get_parameter('map_frame').value
         marker_array = MarkerArray()
         
@@ -498,16 +566,23 @@ class CombinedDetectionNode(Node):
             self.tracked_objects_pub.publish(marker_array)
 
     def _publish_tracked_objects(self):
-        """Publish tracked objects"""
         if not self.tracked_objects:
             self.obstacles_array_pub.publish(String(data=json.dumps([])))
             return
         
         map_frame = self.get_parameter('map_frame').value
-        confirmed_count = sum(1 for obj in self.tracked_objects.values() if obj.confirmed)
+        require_stable = self.get_parameter('require_stable_detections').value
         
-        summary_lines = [f"{confirmed_count} confirmed, {len(self.tracked_objects)-confirmed_count} waiting"]
-        for obj in self.tracked_objects.values():
+        # Filter objects: only show confirmed OR stable unconfirmed
+        visible_objects = {}
+        for obj_id, obj in self.tracked_objects.items():
+            if obj.confirmed or (not require_stable) or obj.is_stable:
+                visible_objects[obj_id] = obj
+        
+        confirmed_count = sum(1 for obj in visible_objects.values() if obj.confirmed)
+        
+        summary_lines = [f"{confirmed_count} confirmed, {len(visible_objects)-confirmed_count} waiting"]
+        for obj in visible_objects.values():
             if obj.confirmed:
                 summary_lines.append(
                     f"  ✓ {obj.class_name} @ {obj.distance:.1f}m [{obj.map_x:.1f}, {obj.map_y:.1f}]"
@@ -515,11 +590,13 @@ class CombinedDetectionNode(Node):
         
         self.fused_detections_pub.publish(String(data="\n".join(summary_lines)))
         
-        obstacles_array = [obj.to_dict() for obj in self.tracked_objects.values()]
+        # Publish JSON array (only visible objects)
+        obstacles_array = [obj.to_dict() for obj in visible_objects.values()]
         self.obstacles_array_pub.publish(String(data=json.dumps(obstacles_array, indent=2)))
         
+        # Publish markers (only for visible objects)
         marker_array = MarkerArray()
-        for obj in self.tracked_objects.values():
+        for obj in visible_objects.values():
             marker = Marker()
             marker.header.frame_id = map_frame
             marker.header.stamp = self.get_clock().now().to_msg()
@@ -543,6 +620,7 @@ class CombinedDetectionNode(Node):
             marker.lifetime = rclpy.duration.Duration(seconds=1.0).to_msg()
             marker_array.markers.append(marker)
             
+            # Text
             text = Marker()
             text.header = marker.header
             text.ns = "object_labels"
@@ -567,7 +645,6 @@ class CombinedDetectionNode(Node):
         self.tracked_objects_pub.publish(marker_array)
 
     def _create_image_msg(self, cv_image):
-        """Convert OpenCV image to ROS Image"""
         msg = Image()
         msg.height = cv_image.shape[0]
         msg.width = cv_image.shape[1]

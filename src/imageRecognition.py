@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-# ROS2 YOLO Object Detection Node with Multiple Output Options
-
 import rclpy
 import numpy as np
 from rclpy.node import Node
