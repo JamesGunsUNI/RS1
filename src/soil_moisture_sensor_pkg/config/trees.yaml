@@ -5,81 +5,95 @@ trees:
     y: 12.2995
     z: -0.3 
     moisture: 0.35
+    ph: 6.5
   - id: 2
     name: oak_2
     x: 5.99444 
     y: -4.95498 
     z: -0.3
     moisture: 0.62
+    ph: 6.8
   - id: 3
     name: oak_3
     x: -9.12426 
     y: -11.2689 
     z: -0.3
     moisture: 0.48 
+    ph: 6.4
   - id: 4
     name: oak_4
     x: 4.21788
     y: -1.41417
     z: -0.3
     moisture: 0.8
+    ph: 7.0
   - id: 5
     name: oak_5
     x: -6.26553 
     y: 5.00575 
     z: -0.3
     moisture: 0.29
+    ph: 6.3
   - id: 6
     name: oak_6
     x: -4.33701 
     y: 1.32854 
     z: -0.3
     moisture: 0.76
+    ph: 7.1
   - id: 7
     name: oak_7
     x: -0.620372 
     y: 10 
     z: -0.3
     moisture: 0.33
+    ph: 6.6
   - id: 8
     name: oak_8
     x: 3.54698 
     y: 5
     z: -0.3
     moisture: 0.50
+    ph: 6.9
   - id: 9
     name: pine_1
     x: 6.05721
     y: 9.78933
     z: 0
     moisture: 0.9
+    ph: 5.5
   - id: 10
     name: pine_2
     x: -10.0184 
     y: 8.85188
     z: 0
     moisture: 0.81
+    ph: 5.8
   - id: 11
     name: pine_3
     x: -4.62343 
     y: -12.5618
     z: 0
     moisture: 0.74
+    ph: 5.6
   - id: 12
     name: pine_4
     x: 7.08738
     y: 1.33612
     z: 0
     moisture: 0.55
+    ph: 5.9
   - id: 13
     name: pine_5
     x: -4.64898 
     y: -3.0329
     z: 0
     moisture: 0.61
+    ph: 5.7
   - id: 14
     name: pine_6
     x: -2.27195 
     y: -8.68441
     z: 0
     moisture: 0.78
+    ph: 5.4

@@ -34,7 +34,9 @@ SoilMoistureVisualizer::SoilMoistureVisualizer()
   robot_x_(0.0), robot_y_(0.0), 
   last_moisture_(0.0),
   pose_received_(false),
-  moisture_received_(false)
+  moisture_received_(false),
+  last_ph_(0.0),
+  ph_received_(false)
 {
     // ===== DECLARE ROS2 PARAMETERS =====
     // These control how the visualization behaves
@@ -60,6 +62,11 @@ SoilMoistureVisualizer::SoilMoistureVisualizer()
     soil_sub_ = this->create_subscription<std_msgs::msg::Float32>(
         "/soil_moisture", 10,
         std::bind(&SoilMoistureVisualizer::soilMoistureCallback, this, std::placeholders::_1));
+
+    // Subscribe to pH readings from sensor node
+    ph_sub_ = this->create_subscription<std_msgs::msg::Float32>(
+    "/soil_ph", 10,
+    std::bind(&SoilMoistureVisualizer::soilPhCallback, this, std::placeholders::_1));
 
     // Subscribe to sample locations (where readings were taken)
     // This allows us to build the heatmap grid
@@ -142,6 +149,8 @@ void SoilMoistureVisualizer::loadTreePositions(const std::string &yaml_file) {
             t.z = tree["z"].as<double>();
             t.has_reading = false;  // No moisture data yet
             t.moisture_reading = 0.0;
+            t.has_ph_reading = false;   //No pH data yet
+            t.ph_reading = 0.0;
             trees_.push_back(t);
         }
         RCLCPP_INFO(this->get_logger(), "Loaded %zu tree positions", trees_.size());
@@ -182,6 +191,22 @@ void SoilMoistureVisualizer::soilMoistureCallback(const std_msgs::msg::Float32::
 }
 
 /**
+ * @brief Callback for pH readings - stores latest value
+ * 
+ * The pH value is stored temporarily until we receive the
+ * corresponding sample location message. This allows us to pair
+ * pH readings with their spatial locations.
+ */
+void SoilMoistureVisualizer::soilPhCallback(const std_msgs::msg::Float32::SharedPtr msg) {
+    if (!std::isnan(msg->data)) {
+        last_ph_ = msg->data;
+        ph_received_ = true;
+    } else {
+        ph_received_ = false;
+    }
+}
+
+/**
  * @brief Callback for sample location - updates heatmap and tree data
  * 
  * When a sample location arrives, we:
@@ -194,13 +219,17 @@ void SoilMoistureVisualizer::sampleLocationCallback(
     const geometry_msgs::msg::PointStamped::SharedPtr msg) {
     
     // Can't process without a moisture value
-    if (!moisture_received_) return;
+    if (!moisture_received_ && !ph_received_) return;
 
     double x = msg->point.x;
     double y = msg->point.y;
     
-    // Update the heatmap grid with this reading
-    updateHeatmap(x, y, last_moisture_);
+    if (moisture_received_) {
+        updateHeatmap(x, y, last_moisture_);
+    }
+    if (ph_received_) {
+        updatePHHeatmap(x, y, last_ph_);
+    }
     
     // Find closest tree to this sample location
     double dist;
@@ -208,13 +237,23 @@ void SoilMoistureVisualizer::sampleLocationCallback(
     
     // Update tree's moisture reading if it's close enough
     if (tree_id >= 0 && tree_id < static_cast<int>(trees_.size())) {
-        trees_[tree_id].moisture_reading = last_moisture_;
-        trees_[tree_id].has_reading = true;
-        trees_[tree_id].last_update = this->now();
+        if (moisture_received_) {
+            trees_[tree_id].moisture_reading = last_moisture_;
+            trees_[tree_id].has_reading = true;
+            trees_[tree_id].last_update = this->now();
+        }
+        if (ph_received_) {
+            trees_[tree_id].ph_reading = last_ph_;
+            trees_[tree_id].has_ph_reading = true;
+            trees_[tree_id].last_update = this->now();
+        }
         
         RCLCPP_INFO(this->get_logger(), 
-                   "Updated %s with moisture %.3f (dist=%.2fm)",
-                   trees_[tree_id].name.c_str(), last_moisture_, dist);
+            "Updated %s with moisture %.3f ph=%.2f (dist=%.2fm)",
+            trees_[tree_id].name.c_str(),
+            trees_[tree_id].has_reading ? trees_[tree_id].moisture_reading : -1.0,
+            trees_[tree_id].has_ph_reading ? trees_[tree_id].ph_reading : -1.0,
+            dist);
     }
 }
 
@@ -291,6 +330,39 @@ void SoilMoistureVisualizer::updateHeatmap(double x, double y, double moisture) 
         heatmap_grid_[key].moisture_sum += moisture;
         heatmap_grid_[key].sample_count++;
         heatmap_grid_[key].last_update = this->now();
+    }
+}
+
+/**
+ * @brief Add a pH reading to the pH heatmap grid
+ * 
+ * The pH heatmap uses a grid structure where each cell accumulates multiple
+ * readings. This allows us to average out noise and build a smoother
+ * visualization as the robot explores.
+ * 
+ * Grid cells are identified by integer coordinates (grid_x, grid_y).
+ * Multiple readings in the same cell are averaged together.
+ * 
+ * @param x X coordinate of sample (world coordinates)
+ * @param y Y coordinate of sample (world coordinates)
+ * @param ph pH value
+ */
+void SoilMoistureVisualizer::updatePHHeatmap(double x, double y, double ph) {
+    int grid_x = static_cast<int>(std::floor(x / grid_resolution_));
+    int grid_y = static_cast<int>(std::floor(y / grid_resolution_));
+    auto key = std::make_pair(grid_x, grid_y);
+    if (ph_heatmap_grid_.find(key) == ph_heatmap_grid_.end()) {
+        PHHeatmapCell cell;
+        cell.x = grid_x * grid_resolution_ + grid_resolution_ / 2.0;
+        cell.y = grid_y * grid_resolution_ + grid_resolution_ / 2.0;
+        cell.ph_sum = ph;
+        cell.sample_count = 1;
+        cell.last_update = this->now();
+        ph_heatmap_grid_[key] = cell;
+    } else {
+        ph_heatmap_grid_[key].ph_sum += ph;
+        ph_heatmap_grid_[key].sample_count++;
+        ph_heatmap_grid_[key].last_update = this->now();
     }
 }
 
@@ -420,9 +492,19 @@ void SoilMoistureVisualizer::publishVisualization() {
             
             // Format text: "tree_1\n35.2%"
             char buffer[64];
-            snprintf(buffer, sizeof(buffer), "%s\n%.1f%%", 
-                    tree.name.c_str(), tree.moisture_reading * 100.0);
-            text_marker.text = buffer;
+            if (tree.has_reading && tree.has_ph_reading) {
+                // two-line text: moisture then pH
+                snprintf(buffer, sizeof(buffer), "%s\n%.1f%%\npH %.2f",
+                         tree.name.c_str(),
+                         tree.moisture_reading * 100.0,
+                         tree.ph_reading);
+            } else if (tree.has_reading) {
+                snprintf(buffer, sizeof(buffer), "%s\n%.1f%%",
+                         tree.name.c_str(), tree.moisture_reading * 100.0);
+            } else { // only ph
+                snprintf(buffer, sizeof(buffer), "%s\npH %.2f",
+                         tree.name.c_str(), tree.ph_reading);
+            }
             
             marker_array.markers.push_back(text_marker);
         }

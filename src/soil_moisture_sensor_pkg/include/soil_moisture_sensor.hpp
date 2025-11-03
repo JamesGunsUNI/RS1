@@ -30,6 +30,7 @@ struct Tree {
     double y;
     double z;
     double moisture;
+    double ph;
 };
 
 class SoilMoistureSensor : public rclcpp::Node {
@@ -41,9 +42,11 @@ private:
     void updateSensor();
     void loadTreeData(const std::string &filename);
     double getMoistureAtPosition(double x, double y);
+    double getPHAtPosition(double x, double y);
 
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
     rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr moisture_pub_;
+    rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr ph_pub_;
     rclcpp::Publisher<geometry_msgs::msg::PointStamped>::SharedPtr location_pub_;
     rclcpp::TimerBase::SharedPtr timer_;
 

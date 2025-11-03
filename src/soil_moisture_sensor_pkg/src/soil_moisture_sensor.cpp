@@ -179,6 +179,8 @@ SoilMoistureSensor::SoilMoistureSensor()
         std::bind(&SoilMoistureSensor::odomCallback, this, std::placeholders::_1));
 
     moisture_pub_ = this->create_publisher<std_msgs::msg::Float32>("/soil_moisture", 10);
+
+    ph_pub_ = this->create_publisher<std_msgs::msg::Float32>("/soil_ph", 10);
     
     location_pub_ = this->create_publisher<geometry_msgs::msg::PointStamped>("/soil_sample_location", 10);
 
@@ -212,6 +214,7 @@ void SoilMoistureSensor::loadTreeData(const std::string &filename) {
             tree.y = t["y"].as<double>();
             tree.z = t["z"].as<double>();
             tree.moisture = t["moisture"].as<double>();
+            tree.ph = t["ph"].as<double>();
             trees_.push_back(tree);
             
             RCLCPP_DEBUG(this->get_logger(), "Loaded %s at (%.2f, %.2f) with moisture %.2f", 
@@ -267,6 +270,38 @@ double SoilMoistureSensor::getMoistureAtPosition(double x, double y) {
     
     // Clamp to [0, 1]
     return std::max(0.0, std::min(1.0, moisture));
+}
+
+double SoilMoistureSensor::getPHAtPosition(double x, double y) {
+    // pH range typical soil: ~3.5 - 9.0 (we'll normalize to 0..1 internally and output pH)
+    if (!use_perlin_noise_) {
+        for (const auto &tree : trees_) {
+            double dx = x - tree.x;
+            double dy = y - tree.y;
+            double dist = std::sqrt(dx * dx + dy * dy);
+
+            if (dist < sensing_radius_) {
+                double noisy_val = tree.ph + noise_dist_(gen_);
+                if (std::isnan(noisy_val)) return std::numeric_limits<double>::quiet_NaN();
+                return noisy_val;
+            }
+        }
+        return std::numeric_limits<double>::quiet_NaN();
+    }
+
+    double perlin_x = (x + perlin_offset_x_) * perlin_scale_ * 1.3; // slightly different scale
+    double perlin_y = (y + perlin_offset_y_) * perlin_scale_ * 1.3;
+
+    // generate perlin in [0,1]
+    double base = perlin_.noise(perlin_x, perlin_y);
+    double octave1 = perlin_.noise(perlin_x * 2.0, perlin_y * 2.0) * 0.5;
+    double octave2 = perlin_.noise(perlin_x * 4.0, perlin_y * 4.0) * 0.25;
+    double combined = base + octave1 * 0.3 + octave2 * 0.15;
+
+    // Normalize combined into a realistic soil pH range e.g. 4.0 - 8.0
+    double ph = 4.0 + combined * 4.0; // [4.0, 8.0]
+    ph += noise_dist_(gen_) * 2.0;    // slightly larger sensor noise for pH
+    return std::max(0.0, std::min(14.0, ph));
 }
 
 void SoilMoistureSensor::updateSensor() {

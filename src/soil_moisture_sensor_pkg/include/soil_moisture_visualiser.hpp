@@ -19,12 +19,22 @@ struct TreePosition {
     double x, y, z;
     double moisture_reading;
     bool has_reading;
+    bool has_ph_reading;
+    double ph_reading;
     rclcpp::Time last_update;
 };
 
 struct HeatmapCell {
     double x, y;
     double moisture_sum;
+    int sample_count;
+    rclcpp::Time last_update;
+};
+
+struct PHHeatmapCell {
+    double x;
+    double y;
+    double ph_sum;
     int sample_count;
     rclcpp::Time last_update;
 };
@@ -44,7 +54,11 @@ private:
     void publishHeatmapMarkers();
     std_msgs::msg::ColorRGBA moistureToColor(double moisture);
 
+    void soilPhCallback(const std_msgs::msg::Float32::SharedPtr msg);
+    void updatePHHeatmap(double x, double y, double ph);
+
     rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr soil_sub_;
+    rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr ph_sub_;
     rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr location_sub_;
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
     
@@ -66,6 +80,10 @@ private:
     double grid_resolution_;
     double map_min_x_, map_max_x_;
     double map_min_y_, map_max_y_;
+
+    double last_ph_;
+    bool ph_received_;
+    std::map<std::pair<int,int>, PHHeatmapCell> ph_heatmap_grid_;
 };
 
 #endif
