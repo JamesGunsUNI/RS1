@@ -154,7 +154,7 @@ class CombinedDetectionNode(Node):
         self.next_object_id = 0
         self.published_marker_ids = set()
         
-        self.get_logger().info('Two-Stage Detection Node Started: LiDAR scans → Camera confirms')
+        self.get_logger().info('object detection node started')
 
     def transform_point_to_map(self, x, y, z=0.0, source_frame=None):
         try:

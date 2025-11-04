@@ -44,8 +44,6 @@ Now install this package:
 
 * And similarly, the larger world, and with SLAM and navigation:
   ```bash
-  #OLD Launch Method
-  #ros2 launch 41068_ignition_bringup 41068_ignition.launch.py slam:=true nav2:=true rviz:=true world:=large_demo #map:=/maps/my_map.yaml
 
   #Launch UI
   ros2 run tb4_env_ui tb4_env_ui
@@ -54,7 +52,7 @@ Now install this package:
   ros2 launch soil_moisture_sensor_pkg soil_sensor_launch.py
  
   #Laucnh image detection and mission
-  cd env_pkg/src
+  cd src/env_pkg/src
   python3 imageRecognition.py #make sure you have pip install ultralytics installed!
   python3 mission.py
 
