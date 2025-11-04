@@ -86,13 +86,14 @@ void HeatmapWidget::mouseMoveEvent(QMouseEvent* ev)
   double wx, wy; float v; bool hasData;
   if (sampleAt(ev->pos(), wx, wy, v, hasData)) {
     const QString txt = hasData
-      ? QString("x=%.2f, y=%.2f\nmoisture=%.3f").arg(wx).arg(wy).arg(v)
-      : QString("x=%.2f, y=%.2f\n(no data)").arg(wx).arg(wy);
+      ? QString("Moisture: %1").arg(QString::number(v, 'f', 3))
+      : QString("(no data)");
     QToolTip::showText(ev->globalPos(), txt, this);
   } else {
     QToolTip::hideText();
   }
 }
+
 
 // ---------------- MainWindow impl ----------------
 
@@ -228,6 +229,13 @@ MainWindow::MainWindow(QWidget* parent) : QWidget(parent)
     QLabel.sectionTitle { font-size:16px; font-weight:600; margin-top:8px; }
   )CSS");
 
+  {
+  QString ss = qApp->styleSheet();
+  ss += " QToolTip { color:#ffffff; background-color:rgba(0,0,0,220); "
+        "border:1px solid #ffffff; padding:4px 6px; border-radius:6px; }";
+  qApp->setStyleSheet(ss);
+}
+
   // ----- Launcher wiring
   launcher_ = new ProcessLauncher(this);
   connect(launcher_, &ProcessLauncher::runningChanged, this, [this](bool running){
@@ -306,6 +314,9 @@ void MainWindow::buildSoilSection(QVBoxLayout* column)
   heatmapView_->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
   heatmapView_->setFixedSize(heatmapSize_);
 
+  // crisp white border + black background
+  heatmapView_->setStyleSheet("background:#000; border:2px solid #ffffff; border-radius:12px;");
+
   // Bind grid pointers for hover sampling
   HeatmapWidget::GridView gv;
   gv.min_x = &heatmap_.min_x; gv.min_y = &heatmap_.min_y; gv.res = &heatmap_.res;
@@ -313,6 +324,9 @@ void MainWindow::buildSoilSection(QVBoxLayout* column)
   gv.sum = &heatmap_.sum; gv.cnt = &heatmap_.cnt;
   gv.mutex = &heatmapMutex_;
   heatmapView_->bindGrid(gv);
+
+  // kick an initial frame so the widget paints right away
+  heatmapView_->setImage(heatmap_.toImage());
 
   column->addWidget(heatmapView_);
 }

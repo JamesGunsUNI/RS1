@@ -168,9 +168,13 @@ public:
       for (int y=0; y<ny; ++y){
         for (int x=0; x<nx; ++x){
           const int idx = y*nx + x;
-          float m = (cnt[idx]>0.f) ? (sum[idx]/cnt[idx]) : 0.f;
-          m = std::clamp(m, 0.f, 1.f);
-          img.setPixel(x, ny-1-y, ramp(m)); // flip Y
+          if (cnt[idx] > 0.f) {
+            float m = sum[idx] / cnt[idx];         // 0..1 expected
+            m = std::clamp(m, 0.f, 1.f);
+            img.setPixel(x, ny-1-y, ramp(m));      // colorized cell
+          } else {
+            img.setPixel(x, ny-1-y, qRgba(0,0,0,255));  // black for no data
+          }
         }
       }
       return img;
