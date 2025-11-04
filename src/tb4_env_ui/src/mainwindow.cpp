@@ -18,6 +18,84 @@
 #include <QPixmap>
 #include <QTextCursor>
 #include <QSizePolicy>
+#include <QPainter>
+#include <QMouseEvent>
+#include <QToolTip>
+#include <QMutexLocker>
+
+// ---------------- HeatmapWidget impl ----------------
+void HeatmapWidget::paintEvent(QPaintEvent*)
+{
+  QPainter p(this);
+  p.setRenderHint(QPainter::SmoothPixmapTransform, false);
+
+  if (!img_.isNull()) {
+    // scale to widget rect
+    p.drawImage(rect(), img_);
+  } else {
+    // placeholder
+    p.fillRect(rect(), QColor("#0b1220"));
+    p.setPen(QColor("#6b7280"));
+    p.drawText(rect(), Qt::AlignCenter, "No heat map data yet");
+  }
+}
+
+bool HeatmapWidget::sampleAt(const QPoint& pos, double& wx, double& wy, float& value, bool& hasData) const
+{
+  if (!gv_.nx || !gv_.ny || !gv_.sum || !gv_.cnt || !gv_.min_x || !gv_.min_y || !gv_.res) return false;
+
+  const int W = width();
+  const int H = height();
+  if (W <= 0 || H <= 0) return false;
+
+  const int nx = *gv_.nx, ny = *gv_.ny;
+  if (nx <= 0 || ny <= 0) return false;
+
+  // map pixel -> cell coords
+  int cx = int(std::floor(double(pos.x()) * nx / double(W)));
+  int cy_img = int(std::floor(double(pos.y()) * ny / double(H)));
+  int cy = ny - 1 - cy_img; // invert Y to match toImage flip
+
+  if (cx < 0 || cy < 0 || cx >= nx || cy >= ny) return false;
+  const int idx = cy*nx + cx;
+
+  // world coords (cell center)
+  const double res = *gv_.res;
+  wx = *gv_.min_x + (cx + 0.5) * res;
+  wy = *gv_.min_y + (cy + 0.5) * res;
+
+  // read value with a short lock
+  float c = 0.f;
+  float val = 0.f;
+  if (gv_.mutex) {
+    QMutexLocker locker(gv_.mutex);
+    c   = (gv_.cnt->at(idx) > 0.f) ? gv_.cnt->at(idx) : 0.f;
+    val = (c > 0.f) ? (gv_.sum->at(idx) / c) : 0.f;
+  } else {
+    c   = (gv_.cnt->at(idx) > 0.f) ? gv_.cnt->at(idx) : 0.f;
+    val = (c > 0.f) ? (gv_.sum->at(idx) / c) : 0.f;
+  }
+
+  value   = val;
+  hasData = (c > 0.f);
+  return true;
+}
+
+void HeatmapWidget::mouseMoveEvent(QMouseEvent* ev)
+{
+  double wx, wy; float v; bool hasData;
+  if (sampleAt(ev->pos(), wx, wy, v, hasData)) {
+    const QString txt = hasData
+      ? QString("Moisture: %1").arg(QString::number(v, 'f', 3))
+      : QString("(no data)");
+    QToolTip::showText(ev->globalPos(), txt, this);
+  } else {
+    QToolTip::hideText();
+  }
+}
+
+
+// ---------------- MainWindow impl ----------------
 
 static QString dotColour(const QString& state)
 {
@@ -127,8 +205,8 @@ MainWindow::MainWindow(QWidget* parent) : QWidget(parent)
   // Right column: Soil Moisture (fixed-width heat-map)
   auto* soilCol = new QVBoxLayout();
   buildSoilSection(soilCol);        // creates title + fixed 360x360 heatmap
-  soilCol->addStretch(1);           // push content to top if row gets tall
-  mediaRow->addLayout(soilCol);     // no stretch -> sized by fixed heatmap
+  soilCol->addStretch(1);
+  mediaRow->addLayout(soilCol);
 
   root->addLayout(mediaRow);
 
@@ -149,10 +227,14 @@ MainWindow::MainWindow(QWidget* parent) : QWidget(parent)
       background:#0f172a; border:1px solid #374151; border-radius:12px; padding:12px; font-family:monospace;
     }
     QLabel.sectionTitle { font-size:16px; font-weight:600; margin-top:8px; }
-    QLabel#heatmap {
-      background:#0b1220; border:1px solid #374151; border-radius:12px;
-    }
   )CSS");
+
+  {
+  QString ss = qApp->styleSheet();
+  ss += " QToolTip { color:#ffffff; background-color:rgba(0,0,0,220); "
+        "border:1px solid #ffffff; padding:4px 6px; border-radius:6px; }";
+  qApp->setStyleSheet(ss);
+}
 
   // ----- Launcher wiring
   launcher_ = new ProcessLauncher(this);
@@ -227,15 +309,26 @@ void MainWindow::buildSoilSection(QVBoxLayout* column)
   soilTitle_->setProperty("class", "sectionTitle");
   column->addWidget(soilTitle_);
 
-  // Heat-map view only (no “latest” value)
-  heatmapLabel_ = new QLabel(this);
-  heatmapLabel_->setObjectName("heatmap");
-  heatmapLabel_->setAlignment(Qt::AlignCenter);
+  // Custom widget with hover tooltips
+  heatmapView_ = new HeatmapWidget(this);
+  heatmapView_->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+  heatmapView_->setFixedSize(heatmapSize_);
 
-  // fixed size prevents horizontal/vertical growth
-  heatmapLabel_->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-  heatmapLabel_->setFixedSize(heatmapSize_);
-  column->addWidget(heatmapLabel_);
+  // crisp white border + black background
+  heatmapView_->setStyleSheet("background:#000; border:2px solid #ffffff; border-radius:12px;");
+
+  // Bind grid pointers for hover sampling
+  HeatmapWidget::GridView gv;
+  gv.min_x = &heatmap_.min_x; gv.min_y = &heatmap_.min_y; gv.res = &heatmap_.res;
+  gv.nx = &heatmap_.nx; gv.ny = &heatmap_.ny;
+  gv.sum = &heatmap_.sum; gv.cnt = &heatmap_.cnt;
+  gv.mutex = &heatmapMutex_;
+  heatmapView_->bindGrid(gv);
+
+  // kick an initial frame so the widget paints right away
+  heatmapView_->setImage(heatmap_.toImage());
+
+  column->addWidget(heatmapView_);
 }
 
 void MainWindow::startSoilSubscriptions()
@@ -269,7 +362,6 @@ void MainWindow::stopSoilSubscriptions()
 
 void MainWindow::onMoisture(float v)
 {
-  // stored for next /soil_sample_location
   lastMoisture_.store(v, std::memory_order_relaxed);
 }
 
@@ -282,15 +374,13 @@ void MainWindow::onSampleXY(double x, double y)
 
 void MainWindow::onUiTick()
 {
-  if (!heatmapLabel_) return;
+  if (!heatmapView_) return;
 
   QImage img;
   {
     QMutexLocker lock(&heatmapMutex_);
     img = heatmap_.toImage();
   }
-  if (!img.isNull()) {
-    heatmapLabel_->setPixmap(QPixmap::fromImage(
-        img.scaled(heatmapSize_, Qt::IgnoreAspectRatio, Qt::FastTransformation)));
-  }
+  // give raw grid image; widget scales it to its fixed rect
+  heatmapView_->setImage(img);
 }

@@ -23,11 +23,46 @@ class QLabel;
 class QPushButton;
 class QFrame;
 class QPlainTextEdit;
-class QVBoxLayout;     // <-- for the new buildSoilSection signature
+class QVBoxLayout;
 class ProcessLauncher;
 class ImageWidget;
 class RosImageBridge;
 
+// ---------------- HeatmapWidget (for hover tooltip) ----------------
+class HeatmapWidget : public QWidget {
+  Q_OBJECT
+public:
+  explicit HeatmapWidget(QWidget* parent=nullptr) : QWidget(parent) {
+    setMouseTracking(true);
+  }
+
+  struct GridView {
+    // read-only view of the grid
+    const double* min_x{};
+    const double* min_y{};
+    const double* res{};
+    const int* nx{};
+    const int* ny{};
+    const std::vector<float>* sum{};
+    const std::vector<float>* cnt{};
+    QMutex* mutex{};
+  };
+
+  void bindGrid(const GridView& gv) { gv_ = gv; }
+  void setImage(const QImage& img)  { img_ = img; update(); }
+
+protected:
+  void paintEvent(QPaintEvent*) override;
+  void mouseMoveEvent(QMouseEvent* ev) override;
+
+private:
+  bool sampleAt(const QPoint& pos, double& wx, double& wy, float& value, bool& hasData) const;
+
+  QImage  img_;
+  GridView gv_{};
+};
+
+// ---------------- MainWindow ----------------
 class MainWindow : public QWidget
 {
   Q_OBJECT
@@ -54,7 +89,7 @@ private:
   void setStatusText(const QString& text);
 
   // ---- Soil helpers ----
-  void buildSoilSection(QVBoxLayout* column);   // <-- place heat-map into the given column
+  void buildSoilSection(QVBoxLayout* column);   // place heat-map into the given column
   void startSoilSubscriptions();
   void stopSoilSubscriptions();
 
@@ -77,7 +112,8 @@ private:
   // Backend
   ProcessLauncher* launcher_{};
 
-  // ---- Soil heat-map section (compact, no docks) ----
+public:
+  // ---- Soil heat-map data & rendering ----
   struct HeatmapGrid {
     double min_x{-10.0}, max_x{10.0}, min_y{-10.0}, max_y{10.0}, res{0.5};
     int nx{0}, ny{0};
@@ -100,27 +136,54 @@ private:
       i = iy*nx + ix; return true;
     }
     void add(double x,double y,float v){ int i; if(index(x,y,i)){ sum[i]+=v; cnt[i]+=1.f; } }
+
+    // Perceptual gradient (viridis-like)
+    // Per-cell color: red (0.0) → blue (1.0)
+    static QRgb ramp(float t) {
+      t = std::clamp(t, 0.0f, 1.0f);
+      struct C { float r,g,b; };
+      // RdBu-ish stops (dark red → salmon → light → sky → dark blue)
+      static constexpr C stops[] = {
+        {0.698f, 0.094f, 0.125f}, // #b2182b
+        {0.937f, 0.541f, 0.384f}, // #ef8a62
+        {0.969f, 0.855f, 0.780f}, // #fddbc7  (near-white midpoint)
+        {0.404f, 0.663f, 0.812f}, // #67a9cf
+        {0.129f, 0.400f, 0.675f}  // #2166ac
+      };
+      constexpr int N = int(sizeof(stops)/sizeof(stops[0]));
+      const float pos = t * (N - 1);
+      const int   i   = int(std::floor(pos));
+      const float a   = pos - i;
+      const int   j   = std::min(i + 1, N - 1);
+      const float r = (1-a)*stops[i].r + a*stops[j].r;
+      const float g = (1-a)*stops[i].g + a*stops[j].g;
+      const float b = (1-a)*stops[i].b + a*stops[j].b;
+      return qRgba(int(r*255.f), int(g*255.f), int(b*255.f), 216);
+    }
+
+
     QImage toImage() const {
       if (nx<=0||ny<=0) return QImage();
       QImage img(nx, ny, QImage::Format_ARGB32);
       for (int y=0; y<ny; ++y){
         for (int x=0; x<nx; ++x){
           const int idx = y*nx + x;
-          const float m = (cnt[idx]>0.f) ? (sum[idx]/cnt[idx]) : 0.f; // 0..1 expected
-          const float c = std::clamp(m, 0.f, 1.f);
-          int r,g,b;
-          if (c < 0.3f){ float t=c/0.3f; r=int((0.8f+0.2f*t)*255); g=int((0.0f+0.4f*t)*255); b=0; }
-          else if (c < 0.6f){ float t=(c-0.3f)/0.3f; r=int((1.0f-t)*255); g=int((0.4f+0.6f*t)*255); b=0; }
-          else { float t=(c-0.6f)/0.4f; r=0; g=int((1.0f-0.3f*t)*255); b=int((0.7f*t)*255); }
-          img.setPixel(x, ny-1-y, qRgba(r,g,b,216)); // flip Y, some alpha
+          if (cnt[idx] > 0.f) {
+            float m = sum[idx] / cnt[idx];         // 0..1 expected
+            m = std::clamp(m, 0.f, 1.f);
+            img.setPixel(x, ny-1-y, ramp(m));      // colorized cell
+          } else {
+            img.setPixel(x, ny-1-y, qRgba(0,0,0,255));  // black for no data
+          }
         }
       }
       return img;
     }
   };
 
+private:
   QLabel*     soilTitle_{};            // “Soil Moisture”
-  QLabel*     heatmapLabel_{};         // QImage display (fixed size)
+  HeatmapWidget* heatmapView_{};       // custom widget w/ hover tooltip
   const QSize heatmapSize_{360, 360};  // fixed size keeps layout stable
   QTimer      uiTimer_;
   HeatmapGrid heatmap_{-10.0, 10.0, -10.0, 10.0, 0.5};
