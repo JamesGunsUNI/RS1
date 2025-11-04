@@ -48,7 +48,6 @@ class DetectionSubscriber(Node):
         except json.JSONDecodeError as e:
             self.get_logger().error(f'Failed to parse obstacles JSON: {e}')
 
-
 def main(args=None):
     rclpy.init(args=args)
     
@@ -60,7 +59,6 @@ def main(args=None):
     finally:
         print("\nShutting down Detection Subscriber Node...")
         rclpy.shutdown()
-
 
 if __name__ == '__main__':
     main()
