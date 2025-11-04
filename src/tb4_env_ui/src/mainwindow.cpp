@@ -12,13 +12,23 @@
 #include <QShortcut>
 #include <QKeySequence>
 #include <QPlainTextEdit>
-#include <QDebug>
+#include <QDateTime>
+#include <QScrollBar>
+#include <QMessageBox>
+#include <QPixmap>
+#include <QTextCursor>
+#include <QSizePolicy>
 
 static QString dotColour(const QString& state)
 {
   if (state == "running")  return "#10b981"; // green
   if (state == "stopped")  return "#ef4444"; // red
   return "#6b7280";                          // idle grey
+}
+
+static QString ts()
+{
+  return QDateTime::currentDateTime().toString("hh:mm:ss");
 }
 
 MainWindow::MainWindow(QWidget* parent) : QWidget(parent)
@@ -60,7 +70,6 @@ MainWindow::MainWindow(QWidget* parent) : QWidget(parent)
   startBtn_ = new QPushButton("Start environment", this);
   stopBtn_  = new QPushButton("Stop environment", this);
 
-
   for (auto* b : { startBtn_, stopBtn_ }) {
     b->setMinimumHeight(56);
     b->setCursor(Qt::PointingHandCursor);
@@ -78,23 +87,19 @@ MainWindow::MainWindow(QWidget* parent) : QWidget(parent)
   btnRow->addWidget(stopBtn_);
   root->addLayout(btnRow);
 
-  // ----- New row for extra buttons
+  // ----- Second row (placeholders, still disabled)
   auto* row2 = new QHBoxLayout();
   row2->setSpacing(12);
-  
   startScriptBtn_   = new QPushButton("Start Script", this);
   manualControlBtn_ = new QPushButton("Manual Control", this);
   for (auto* b : { startScriptBtn_, manualControlBtn_ }) {
     b->setMinimumHeight(56);
     b->setCursor(Qt::PointingHandCursor);
+    b->setEnabled(false);
   }
-  // Initially disabled; enable when functionality is implemented 
-  startScriptBtn_->setEnabled(false);
-  manualControlBtn_->setEnabled(false);
   row2->addWidget(startScriptBtn_);
   row2->addWidget(manualControlBtn_);
   root->addLayout(row2);
-  
 
   // ----- Log output
   log_ = new QPlainTextEdit(this);
@@ -102,14 +107,30 @@ MainWindow::MainWindow(QWidget* parent) : QWidget(parent)
   log_->setMinimumHeight(200);
   root->addWidget(log_);
 
-  // ----- Camera label + view  (this must be INSIDE the constructor)
+  // ====== MEDIA ROW: Camera (left) | Heat-map (right) ======
+  auto* mediaRow = new QHBoxLayout();
+  mediaRow->setSpacing(16);
+
+  // Left column: Camera
+  auto* camCol = new QVBoxLayout();
   auto* camLabel = new QLabel("Camera", this);
   camLabel->setStyleSheet("font-size:16px; font-weight:600; margin-top:8px;");
-  root->addWidget(camLabel);
+  camCol->addWidget(camLabel);
 
   camView_ = new ImageWidget(this);
-  camView_->setMinimumHeight(320);
-  root->addWidget(camView_);
+  camView_->setMinimumSize(480, 360);
+  camView_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+  camCol->addWidget(camView_, 1);
+
+  mediaRow->addLayout(camCol, 1);   // stretch = 1 (expands)
+
+  // Right column: Soil Moisture (fixed-width heat-map)
+  auto* soilCol = new QVBoxLayout();
+  buildSoilSection(soilCol);        // creates title + fixed 360x360 heatmap
+  soilCol->addStretch(1);           // push content to top if row gets tall
+  mediaRow->addLayout(soilCol);     // no stretch -> sized by fixed heatmap
+
+  root->addLayout(mediaRow);
 
   // ----- Styling
   setStyleSheet(R"CSS(
@@ -126,6 +147,10 @@ MainWindow::MainWindow(QWidget* parent) : QWidget(parent)
     QPushButton:disabled { background:#1b2431; color:#9ca3af; border-color:#2b3442; }
     QPlainTextEdit {
       background:#0f172a; border:1px solid #374151; border-radius:12px; padding:12px; font-family:monospace;
+    }
+    QLabel.sectionTitle { font-size:16px; font-weight:600; margin-top:8px; }
+    QLabel#heatmap {
+      background:#0b1220; border:1px solid #374151; border-radius:12px;
     }
   )CSS");
 
@@ -144,18 +169,24 @@ MainWindow::MainWindow(QWidget* parent) : QWidget(parent)
     log_->appendPlainText(QString("Process finished. Exit code %1").arg(code));
   });
 
-  // ----- ROS image subscriber (starts now, shows frames when topic is live)
+  // ----- ROS image subscriber
   img_ = new RosImageBridge(this);
   connect(img_, &RosImageBridge::frameReady, camView_, &ImageWidget::setImage);
-  img_->start(cameraTopic_.toStdString());  // defaults to "/camera/image"
+  img_->start(cameraTopic_.toStdString());
+
+  // ----- Soil ROS + timer
+  connect(this, &MainWindow::moistureReceived,  this, &MainWindow::onMoisture,  Qt::QueuedConnection);
+  connect(this, &MainWindow::sampleXYReceived, this, &MainWindow::onSampleXY, Qt::QueuedConnection);
+  uiTimer_.setInterval(100);
+  connect(&uiTimer_, &QTimer::timeout, this, &MainWindow::onUiTick);
+  uiTimer_.start();
+  startSoilSubscriptions();
 }
 
 void MainWindow::onStartClicked()
 {
   if (launcher_->isRunning()) return;
 
-  // Your exact command:
-  // ros2 launch 41068_ignition_bringup 41068_ignition.launch.py slam:=true nav2:=true rviz:=true world:=large_demo
   const QString pkg = "41068_ignition_bringup";
   const QString launch_file = "41068_ignition.launch.py";
   const QStringList extra_args = {"slam:=true", "nav2:=true", "rviz:=true", "world:=large_demo"};
@@ -185,4 +216,81 @@ void MainWindow::setStatusDot(const QString& stateKey)
 void MainWindow::setStatusText(const QString& text)
 {
   statusLabel_->setText(text);
+}
+
+// -------- Soil UI & ROS ----------
+
+void MainWindow::buildSoilSection(QVBoxLayout* column)
+{
+  soilTitle_ = new QLabel("Soil Moisture", this);
+  soilTitle_->setObjectName("soilTitle");
+  soilTitle_->setProperty("class", "sectionTitle");
+  column->addWidget(soilTitle_);
+
+  // Heat-map view only (no “latest” value)
+  heatmapLabel_ = new QLabel(this);
+  heatmapLabel_->setObjectName("heatmap");
+  heatmapLabel_->setAlignment(Qt::AlignCenter);
+
+  // fixed size prevents horizontal/vertical growth
+  heatmapLabel_->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+  heatmapLabel_->setFixedSize(heatmapSize_);
+  column->addWidget(heatmapLabel_);
+}
+
+void MainWindow::startSoilSubscriptions()
+{
+  node_soil_ = std::make_shared<rclcpp::Node>("ui_soil_bridge");
+  exec_soil_ = std::make_shared<rclcpp::executors::MultiThreadedExecutor>();
+  exec_soil_->add_node(node_soil_);
+
+  sub_moist_ = node_soil_->create_subscription<std_msgs::msg::Float32>(
+    "/soil_moisture", 10,
+    [this](std_msgs::msg::Float32::SharedPtr m) {
+      emit moistureReceived(static_cast<float>(m->data));
+    });
+
+  sub_loc_ = node_soil_->create_subscription<geometry_msgs::msg::PointStamped>(
+    "/soil_sample_location", 10,
+    [this](geometry_msgs::msg::PointStamped::SharedPtr m) {
+      emit sampleXYReceived(m->point.x, m->point.y);
+    });
+
+  ros_soil_thread_ = std::thread([this]() { exec_soil_->spin(); });
+}
+
+void MainWindow::stopSoilSubscriptions()
+{
+  if (exec_soil_) exec_soil_->cancel();
+  if (ros_soil_thread_.joinable()) ros_soil_thread_.join();
+  exec_soil_.reset();
+  node_soil_.reset();
+}
+
+void MainWindow::onMoisture(float v)
+{
+  // stored for next /soil_sample_location
+  lastMoisture_.store(v, std::memory_order_relaxed);
+}
+
+void MainWindow::onSampleXY(double x, double y)
+{
+  const float v = lastMoisture_.load(std::memory_order_relaxed);
+  QMutexLocker lock(&heatmapMutex_);
+  heatmap_.add(x, y, v);
+}
+
+void MainWindow::onUiTick()
+{
+  if (!heatmapLabel_) return;
+
+  QImage img;
+  {
+    QMutexLocker lock(&heatmapMutex_);
+    img = heatmap_.toImage();
+  }
+  if (!img.isNull()) {
+    heatmapLabel_->setPixmap(QPixmap::fromImage(
+        img.scaled(heatmapSize_, Qt::IgnoreAspectRatio, Qt::FastTransformation)));
+  }
 }

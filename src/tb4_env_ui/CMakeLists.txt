@@ -22,6 +22,8 @@ find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(image_transport REQUIRED)
 find_package(cv_bridge REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
 
 # OpenCV
 find_package(OpenCV REQUIRED)
@@ -40,6 +42,8 @@ add_executable(tb4_env_ui
   include/process_launcher.h
   include/ros_image_bridge.h
   include/image_widget.h
+  include/ros_bridge.hpp
+  include/heatmap_grid.hpp
 )
 
 # Include directories
@@ -58,6 +62,8 @@ ament_target_dependencies(tb4_env_ui
   sensor_msgs
   image_transport
   cv_bridge
+  std_msgs
+  geometry_msgs
 )
 
 # Install the executable
