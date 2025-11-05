@@ -4,7 +4,7 @@
   <version>0.1.0</version>
   <description>
     A simulated soil moisture sensor for a mobile robot in Gazebo + ROS 2.
-    Publishes soil moisture readings near trees defined in a YAML configuration file.
+    Publishes soil moisture and pH readings near trees defined in a YAML configuration file (config/trees.yaml).
   </description>
 
   <maintainer email="brayden.t.blake@student.uts.edu.au">Brayden Blake</maintainer>

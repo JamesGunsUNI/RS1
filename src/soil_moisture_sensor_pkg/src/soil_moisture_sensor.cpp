@@ -17,9 +17,6 @@
 /**
  * @brief Initialize Perlin noise with a permutation table
  * 
- * The permutation table is a shuffled array of integers [0-255] that
- * determines the pseudo-random gradients at each grid point. Using the
- * same seed produces identical noise patterns (deterministic behavior).
  */
 PerlinNoise::PerlinNoise(unsigned int seed) {
     // Create array of integers 0-255
@@ -33,7 +30,6 @@ PerlinNoise::PerlinNoise(unsigned int seed) {
     std::shuffle(p.begin(), p.end(), engine);
     
     // Duplicate the permutation vector to avoid overflow when indexing
-    // This allows us to use p[X+1] without checking bounds
     p.insert(p.end(), p.begin(), p.end());
 }
 
@@ -114,13 +110,12 @@ double PerlinNoise::noise(double x, double y) const {
     // Bilinear interpolation of the 4 corner gradients
     // First interpolate along x at bottom (y=0) and top (y=1)
     // Then interpolate those results along y
-    double res = lerp(v, 
-                     lerp(u, grad(p[AA], x, y), grad(p[BA], x - 1, y)),
-                     lerp(u, grad(p[AB], x, y - 1), grad(p[BB], x - 1, y - 1)));
+    double res = lerp(v, lerp(u, grad(p[AA], x, y), grad(p[BA], x - 1, y)), lerp(u, grad(p[AB], x, y - 1), grad(p[BB], x - 1, y - 1)));
     
     // Normalize from [-1, 1] to [0, 1]
     return (res + 1.0) / 2.0;
 }
+
 
 // ============================================================================
 // SOIL MOISTURE SENSOR IMPLEMENTATION
@@ -132,7 +127,7 @@ double PerlinNoise::noise(double x, double y) const {
 SoilMoistureSensor::SoilMoistureSensor()
     : Node("soil_moisture_sensor"),
       gen_(rd_()),
-      noise_dist_(0.0, 0.01),  // Reduced noise since Perlin provides smoothness
+      noise_dist_(0.0, 0.01),  
       perlin_(std::random_device{}())
 {
     this->declare_parameter("sensing_radius", 0.5);
@@ -174,9 +169,7 @@ SoilMoistureSensor::SoilMoistureSensor()
     std::string full_path = pkg_share + "/config/" + yaml_file;
     loadTreeData(full_path);
 
-    odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
-        "/odom", 10,
-        std::bind(&SoilMoistureSensor::odomCallback, this, std::placeholders::_1));
+    odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>("/odom", 10, std::bind(&SoilMoistureSensor::odomCallback, this, std::placeholders::_1));
 
     moisture_pub_ = this->create_publisher<std_msgs::msg::Float32>("/soil_moisture", 10);
 
@@ -184,16 +177,9 @@ SoilMoistureSensor::SoilMoistureSensor()
     
     location_pub_ = this->create_publisher<geometry_msgs::msg::PointStamped>("/soil_sample_location", 10);
 
-    timer_ = this->create_wall_timer(
-        std::chrono::milliseconds(200),
-        std::bind(&SoilMoistureSensor::updateSensor, this));
+    timer_ = this->create_wall_timer(std::chrono::milliseconds(200), std::bind(&SoilMoistureSensor::updateSensor, this));
 
-    RCLCPP_INFO(this->get_logger(), 
-                "SoilMoistureSensor started: %zu trees, sensing=%.2fm, perlin=%s (scale=%.3f, seed=%s)", 
-                trees_.size(), sensing_radius_, 
-                use_perlin_noise_ ? "enabled" : "disabled",
-                perlin_scale_,
-                custom_seed ? std::to_string(perlin_seed).c_str() : "random");
+    RCLCPP_INFO(this->get_logger(), "SoilMoistureSensor started: %zu trees, sensing=%.2fm, perlin=%s (scale=%.3f, seed=%s)", trees_.size(), sensing_radius_, use_perlin_noise_ ? "enabled" : "disabled", perlin_scale_, custom_seed ? std::to_string(perlin_seed).c_str() : "random");
 }
 
 void SoilMoistureSensor::loadTreeData(const std::string &filename) {
@@ -217,8 +203,7 @@ void SoilMoistureSensor::loadTreeData(const std::string &filename) {
             tree.ph = t["ph"].as<double>();
             trees_.push_back(tree);
             
-            RCLCPP_DEBUG(this->get_logger(), "Loaded %s at (%.2f, %.2f) with moisture %.2f", 
-                        tree.name.c_str(), tree.x, tree.y, tree.moisture);
+            RCLCPP_DEBUG(this->get_logger(), "Loaded %s at (%.2f, %.2f) with moisture %.2f", tree.name.c_str(), tree.x, tree.y, tree.moisture);
         }
         RCLCPP_INFO(this->get_logger(), "Successfully loaded %zu trees", trees_.size());
     } catch (const std::exception &e) {
@@ -273,7 +258,7 @@ double SoilMoistureSensor::getMoistureAtPosition(double x, double y) {
 }
 
 double SoilMoistureSensor::getPHAtPosition(double x, double y) {
-    // pH range typical soil: ~3.5 - 9.0 (we'll normalize to 0..1 internally and output pH)
+    // pH range typical soil: ~3.5 - 9.0
     if (!use_perlin_noise_) {
         for (const auto &tree : trees_) {
             double dx = x - tree.x;
@@ -298,7 +283,7 @@ double SoilMoistureSensor::getPHAtPosition(double x, double y) {
     double octave2 = perlin_.noise(perlin_x * 4.0, perlin_y * 4.0) * 0.25;
     double combined = base + octave1 * 0.3 + octave2 * 0.15;
 
-    // Normalize combined into a realistic soil pH range e.g. 4.0 - 8.0
+    // Normalize combined into a realistic soil pH range
     double ph = 4.0 + combined * 4.0; // [4.0, 8.0]
     ph += noise_dist_(gen_) * 2.0;    // slightly larger sensor noise for pH
     return std::max(0.0, std::min(14.0, ph));
@@ -306,17 +291,14 @@ double SoilMoistureSensor::getPHAtPosition(double x, double y) {
 
 void SoilMoistureSensor::updateSensor() {
     if (!odom_received_) {
-        RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 5000, 
-                            "Waiting for odometry data...");
+        RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 5000, "Waiting for odometry data...");
         return;
     }
 
     float reading = getMoistureAtPosition(robot_x_, robot_y_);
     
     if (!std::isnan(reading)) {
-        RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 2000,
-                   "Position (%.2f, %.2f): moisture = %.3f", 
-                   robot_x_, robot_y_, reading);
+        RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 2000, "Position (%.2f, %.2f): moisture = %.3f", robot_x_, robot_y_, reading);
         
         geometry_msgs::msg::PointStamped location_msg;
         location_msg.header.stamp = this->now();

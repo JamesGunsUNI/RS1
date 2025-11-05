@@ -16,9 +16,6 @@
 #include <limits>
 
 // ============================================================================
-// CONSTRUCTOR - Initialize visualizer with parameters and setup
-// ============================================================================
-
 /**
  * @brief Constructor - Sets up visualization node
  * 
@@ -38,8 +35,6 @@ SoilMoistureVisualizer::SoilMoistureVisualizer()
   last_ph_(0.0),
   ph_received_(false)
 {
-    // ===== DECLARE ROS2 PARAMETERS =====
-    // These control how the visualization behaves
     this->declare_parameter("sampling_radius", 1.0);
     this->declare_parameter("grid_resolution", 0.5);
     this->declare_parameter("map_min_x", -10.0);
@@ -48,54 +43,35 @@ SoilMoistureVisualizer::SoilMoistureVisualizer()
     this->declare_parameter("map_max_y", 10.0);
     this->declare_parameter("yaml_file", "trees.yaml");
     
-    // ===== GET PARAMETER VALUES =====
     this->get_parameter("sampling_radius", sampling_radius_);
     this->get_parameter("grid_resolution", grid_resolution_);
     this->get_parameter("map_min_x", map_min_x_);
     this->get_parameter("map_max_x", map_max_x_);
     this->get_parameter("map_min_y", map_min_y_);
     this->get_parameter("map_max_y", map_max_y_);
-
-    // ===== CREATE SUBSCRIBERS =====
     
     // Subscribe to moisture readings from sensor node
-    soil_sub_ = this->create_subscription<std_msgs::msg::Float32>(
-        "/soil_moisture", 10,
-        std::bind(&SoilMoistureVisualizer::soilMoistureCallback, this, std::placeholders::_1));
+    soil_sub_ = this->create_subscription<std_msgs::msg::Float32>("/soil_moisture", 10, std::bind(&SoilMoistureVisualizer::soilMoistureCallback, this, std::placeholders::_1));
 
     // Subscribe to pH readings from sensor node
-    ph_sub_ = this->create_subscription<std_msgs::msg::Float32>(
-    "/soil_ph", 10,
-    std::bind(&SoilMoistureVisualizer::soilPhCallback, this, std::placeholders::_1));
+    ph_sub_ = this->create_subscription<std_msgs::msg::Float32>("/soil_ph", 10, std::bind(&SoilMoistureVisualizer::soilPhCallback, this, std::placeholders::_1));
 
     // Subscribe to sample locations (where readings were taken)
-    // This allows us to build the heatmap grid
-    location_sub_ = this->create_subscription<geometry_msgs::msg::PointStamped>(
-        "/soil_sample_location", 10,
-        std::bind(&SoilMoistureVisualizer::sampleLocationCallback, this, std::placeholders::_1));
+    location_sub_ = this->create_subscription<geometry_msgs::msg::PointStamped>("/soil_sample_location", 10, std::bind(&SoilMoistureVisualizer::sampleLocationCallback, this, std::placeholders::_1));
 
     // Subscribe to robot odometry for position tracking
-    odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
-        "/odom", 10,
-        std::bind(&SoilMoistureVisualizer::odomCallback, this, std::placeholders::_1));
-
-    // ===== CREATE PUBLISHERS =====
+    odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>("/odom", 10, std::bind(&SoilMoistureVisualizer::odomCallback, this, std::placeholders::_1));
     
     // Publish tree markers and text labels as MarkerArray
-    marker_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(
-        "/soil_moisture_markers", 10);
+    marker_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>("/soil_moisture_markers", 10);
     
     // Publish heatmap grid as single CUBE_LIST marker
-    heatmap_pub_ = this->create_publisher<visualization_msgs::msg::Marker>(
-        "/soil_moisture_heatmap", 10);
+    heatmap_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("/soil_moisture_heatmap", 10);
 
-    // ===== CREATE TIMER =====
     // Update visualization at 2 Hz (every 500ms)
-    viz_timer_ = this->create_wall_timer(
-        std::chrono::milliseconds(500),
-        std::bind(&SoilMoistureVisualizer::publishVisualization, this));
+    viz_timer_ = this->create_wall_timer(std::chrono::milliseconds(500),std::bind(&SoilMoistureVisualizer::publishVisualization, this));
 
-    // ===== LOAD TREE POSITIONS =====
+    // Load tree positions from YAML configuration file
     std::string pkg_share;
     try {
         pkg_share = ament_index_cpp::get_package_share_directory("soil_moisture_sensor_pkg");
@@ -111,14 +87,8 @@ SoilMoistureVisualizer::SoilMoistureVisualizer()
     std::string full_path = pkg_share + "/config/" + yaml_file;
     loadTreePositions(full_path);
 
-    RCLCPP_INFO(this->get_logger(),
-                "Visualizer started: %zu trees, grid=%.2fm, sampling=%.2fm",
-                trees_.size(), grid_resolution_, sampling_radius_);
+    RCLCPP_INFO(this->get_logger(),"Visualizer started: %zu trees, grid=%.2fm, sampling=%.2fm", trees_.size(), grid_resolution_, sampling_radius_);
 }
-
-// ============================================================================
-// DATA LOADING
-// ============================================================================
 
 /**
  * @brief Load tree positions from YAML configuration file
@@ -133,6 +103,8 @@ SoilMoistureVisualizer::SoilMoistureVisualizer()
  *     x: 0.0
  *     y: 3.0
  *     z: 0.0
+ *     moisture: 0.45
+ *     ph: 6.5
  */
 void SoilMoistureVisualizer::loadTreePositions(const std::string &yaml_file) {
     try {
@@ -158,10 +130,6 @@ void SoilMoistureVisualizer::loadTreePositions(const std::string &yaml_file) {
         RCLCPP_ERROR(this->get_logger(), "Failed to load trees: %s", e.what());
     }
 }
-
-// ============================================================================
-// CALLBACK FUNCTIONS - Handle incoming ROS2 messages
-// ============================================================================
 
 /**
  * @brief Callback for odometry messages - updates robot position
@@ -249,17 +217,9 @@ void SoilMoistureVisualizer::sampleLocationCallback(
         }
         
         RCLCPP_INFO(this->get_logger(), 
-            "Updated %s with moisture %.3f ph=%.2f (dist=%.2fm)",
-            trees_[tree_id].name.c_str(),
-            trees_[tree_id].has_reading ? trees_[tree_id].moisture_reading : -1.0,
-            trees_[tree_id].has_ph_reading ? trees_[tree_id].ph_reading : -1.0,
-            dist);
+            "Updated %s with moisture %.3f ph=%.2f (dist=%.2fm)", trees_[tree_id].name.c_str(), trees_[tree_id].has_reading ? trees_[tree_id].moisture_reading : -1.0, trees_[tree_id].has_ph_reading ? trees_[tree_id].ph_reading : -1.0, dist);
     }
 }
-
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
 
 /**
  * @brief Find the closest tree to a given position
@@ -307,7 +267,6 @@ int SoilMoistureVisualizer::findClosestTree(double x, double y, double &dist) {
  */
 void SoilMoistureVisualizer::updateHeatmap(double x, double y, double moisture) {
     // Convert world coordinates to grid cell indices
-    // Floor division ensures consistent cell assignment
     int grid_x = static_cast<int>(std::floor(x / grid_resolution_));
     int grid_y = static_cast<int>(std::floor(y / grid_resolution_));
     
@@ -410,10 +369,6 @@ std_msgs::msg::ColorRGBA SoilMoistureVisualizer::moistureToColor(double moisture
     return color;
 }
 
-// ============================================================================
-// VISUALIZATION PUBLISHING
-// ============================================================================
-
 /**
  * @brief Main visualization function - publishes all markers
  * 
@@ -428,11 +383,10 @@ std_msgs::msg::ColorRGBA SoilMoistureVisualizer::moistureToColor(double moisture
 void SoilMoistureVisualizer::publishVisualization() {
     visualization_msgs::msg::MarkerArray marker_array;
     
-    // ===== CREATE TREE MARKERS =====
     for (size_t i = 0; i < trees_.size(); ++i) {
         const auto &tree = trees_[i];
         
-        // ----- Create cylinder marker for tree -----
+        // Create cylinder marker for tree 
         visualization_msgs::msg::Marker marker;
         marker.header.frame_id = "odom";
         marker.header.stamp = this->now();
@@ -466,7 +420,7 @@ void SoilMoistureVisualizer::publishVisualization() {
         
         marker_array.markers.push_back(marker);
         
-        // ----- Create text label if we have moisture data -----
+        // Create text label if we have moisture data 
         if (tree.has_reading) {
             visualization_msgs::msg::Marker text_marker;
             text_marker.header = marker.header;
@@ -490,20 +444,15 @@ void SoilMoistureVisualizer::publishVisualization() {
             text_marker.color.b = 1.0;
             text_marker.color.a = 1.0;
             
-            // Format text: "tree_1\n35.2%"
+            // Format text
             char buffer[64];
             if (tree.has_reading && tree.has_ph_reading) {
                 // two-line text: moisture then pH
-                snprintf(buffer, sizeof(buffer), "%s\n%.1f%%\npH %.2f",
-                         tree.name.c_str(),
-                         tree.moisture_reading * 100.0,
-                         tree.ph_reading);
+                snprintf(buffer, sizeof(buffer), "%s\n%.1f%%\npH %.2f", tree.name.c_str(), tree.moisture_reading * 100.0, tree.ph_reading);
             } else if (tree.has_reading) {
-                snprintf(buffer, sizeof(buffer), "%s\n%.1f%%",
-                         tree.name.c_str(), tree.moisture_reading * 100.0);
+                snprintf(buffer, sizeof(buffer), "%s\n%.1f%%", tree.name.c_str(), tree.moisture_reading * 100.0);
             } else { // only ph
-                snprintf(buffer, sizeof(buffer), "%s\npH %.2f",
-                         tree.name.c_str(), tree.ph_reading);
+                snprintf(buffer, sizeof(buffer), "%s\npH %.2f", tree.name.c_str(), tree.ph_reading);
             }
             
             marker_array.markers.push_back(text_marker);
