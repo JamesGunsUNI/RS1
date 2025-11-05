@@ -154,13 +154,17 @@ class RobotBrain():
     
     def select_next_sample_location(self):
         print("Selecting Next Goal")
-        self.robot.sample_target_goal = self.robot.test_goals[self.robot.test_goal_id]
+        
+        self.robot.sample_target_goal = self.robot.nearest_tree
+        if self.robot.sample_target_goal == None:
+            self.robot.sample_target_goal = self.robot.roam_goals[self.robot.roam_goal_id]
+            self.robot.roam_goal_id += 1
+
         self.robot.move_to_goal(self.robot.sample_target_goal)
-        self.robot.test_goal_id += 1
         return Status.SUCCESS
 
     def navigate_to_goal(self):
-        print("Navigating to sample site...")
+        print(f"Navigating to sample site... {self.robot.current_goal}")
         return Status.SUCCESS if self.robot.has_reached_goal() else Status.RUNNING
 
 

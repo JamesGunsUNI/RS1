@@ -40,7 +40,7 @@ class ImageRecognition(Node):
         )
         
         # Load YOLO models
-        self.detection_model = YOLO('/home/marcus/41068_ws/src/RS1/src/best.pt')
+        self.detection_model = YOLO('best.pt')
         self.segmentation_model = YOLO('yolo11m-seg.pt')
         
         # Declare parameters for optional features

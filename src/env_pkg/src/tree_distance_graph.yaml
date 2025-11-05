@@ -1,0 +1,1278 @@
+- distance: 5.2
+  robot_position:
+    x: 1.0
+    y: -0.0
+  timestamp: '2025-11-05T13:41:18.871497'
+  tree_id: 0
+  tree_position:
+    x: 3.4
+    y: 4.6
+- distance: 2.8
+  robot_position:
+    x: 3.6
+    y: 2.0
+  timestamp: '2025-11-05T13:59:33.459271'
+  tree_id: 0
+  tree_position:
+    x: 2.7
+    y: 4.7
+- distance: 2.4
+  robot_position:
+    x: 3.7
+    y: 2.4
+  timestamp: '2025-11-05T13:59:35.998369'
+  tree_id: 0
+  tree_position:
+    x: 2.6
+    y: 4.6
+- distance: 2.4
+  robot_position:
+    x: 3.7
+    y: 2.5
+  timestamp: '2025-11-05T13:59:37.750740'
+  tree_id: 0
+  tree_position:
+    x: 2.6
+    y: 4.6
+- distance: 5.7
+  robot_position:
+    x: 0
+    y: 0
+  timestamp: '2025-11-05T14:05:40.283981'
+  tree_id: 0
+  tree_position:
+    x: 3.4
+    y: 4.6
+- distance: 7.1
+  robot_position:
+    x: 0.7
+    y: -0.0
+  timestamp: '2025-11-05T14:05:44.285422'
+  tree_id: 3
+  tree_position:
+    x: 5.8
+    y: -4.9
+- distance: 9.4
+  robot_position:
+    x: 3.6
+    y: 1.8
+  timestamp: '2025-11-05T14:06:00.507296'
+  tree_id: 5
+  tree_position:
+    x: -2.7
+    y: 8.8
+- distance: 4.7
+  robot_position:
+    x: 7.9
+    y: 5.3
+  timestamp: '2025-11-05T14:22:43.951595'
+  tree_id: 0
+  tree_position:
+    x: 8.0
+    y: 0.6
+- distance: 5.0
+  robot_position:
+    x: 6.3
+    y: 7.0
+  timestamp: '2025-11-05T14:24:43.016506'
+  tree_id: 12
+  tree_position:
+    x: 3.9
+    y: 2.6
+- distance: 3.5
+  robot_position:
+    x: 4.4
+    y: 6.1
+  timestamp: '2025-11-05T14:24:59.489216'
+  tree_id: 12
+  tree_position:
+    x: 3.9
+    y: 2.6
+- distance: 3.6
+  robot_position:
+    x: 1.9
+    y: 5.6
+  timestamp: '2025-11-05T14:25:16.403597'
+  tree_id: 12
+  tree_position:
+    x: 3.9
+    y: 2.6
+- distance: 4.3
+  robot_position:
+    x: 0.7
+    y: 5.4
+  timestamp: '2025-11-05T14:25:22.555309'
+  tree_id: 12
+  tree_position:
+    x: 3.9
+    y: 2.6
+- distance: 4.5
+  robot_position:
+    x: 0.4
+    y: 5.4
+  timestamp: '2025-11-05T14:25:36.585678'
+  tree_id: 12
+  tree_position:
+    x: 3.9
+    y: 2.6
+- distance: 6.1
+  robot_position:
+    x: -1.7
+    y: 5.0
+  timestamp: '2025-11-05T14:26:20.937777'
+  tree_id: 12
+  tree_position:
+    x: 3.9
+    y: 2.6
+- distance: 6.1
+  robot_position:
+    x: -1.8
+    y: 4.9
+  timestamp: '2025-11-05T14:26:21.819031'
+  tree_id: 12
+  tree_position:
+    x: 3.9
+    y: 2.6
+- distance: 7.9
+  robot_position:
+    x: -3.8
+    y: 4.3
+  timestamp: '2025-11-05T14:26:41.754041'
+  tree_id: 12
+  tree_position:
+    x: 3.9
+    y: 2.6
+- distance: 9.9
+  robot_position:
+    x: -5.9
+    y: 3.4
+  timestamp: '2025-11-05T14:26:58.688272'
+  tree_id: 12
+  tree_position:
+    x: 3.9
+    y: 2.6
+- distance: 10.9
+  robot_position:
+    x: -7.0
+    y: 2.7
+  timestamp: '2025-11-05T14:27:04.864105'
+  tree_id: 12
+  tree_position:
+    x: 3.9
+    y: 2.6
+- distance: 11.0
+  robot_position:
+    x: -7.1
+    y: 2.6
+  timestamp: '2025-11-05T14:27:21.406290'
+  tree_id: 12
+  tree_position:
+    x: 3.9
+    y: 2.6
+- distance: 10.7
+  robot_position:
+    x: -6.8
+    y: 2.1
+  timestamp: '2025-11-05T14:28:05.167439'
+  tree_id: 12
+  tree_position:
+    x: 3.9
+    y: 2.6
+- distance: 10.5
+  robot_position:
+    x: -6.5
+    y: 1.1
+  timestamp: '2025-11-05T14:28:10.293625'
+  tree_id: 12
+  tree_position:
+    x: 3.9
+    y: 2.6
+- distance: 5.6
+  robot_position:
+    x: 0.2
+    y: -0.0
+  timestamp: '2025-11-05T14:42:23.583819'
+  tree_id: 0
+  tree_position:
+    x: 3.4
+    y: 4.6
+- distance: 5.6
+  robot_position:
+    x: 0.3
+    y: -0.0
+  timestamp: '2025-11-05T14:42:23.815531'
+  tree_id: 0
+  tree_position:
+    x: 3.4
+    y: 4.6
+- distance: 6.8
+  robot_position:
+    x: 1.1
+    y: -0.0
+  timestamp: '2025-11-05T14:42:27.186918'
+  tree_id: 3
+  tree_position:
+    x: 5.8
+    y: -4.9
+- distance: 10.1
+  robot_position:
+    x: 1.4
+    y: 0.0
+  timestamp: '2025-11-05T14:42:37.041894'
+  tree_id: 5
+  tree_position:
+    x: -1.6
+    y: 9.7
+- distance: 10.3
+  robot_position:
+    x: 1.8
+    y: -0.0
+  timestamp: '2025-11-05T14:42:48.328229'
+  tree_id: 5
+  tree_position:
+    x: -1.6
+    y: 9.7
+- distance: 11.1
+  robot_position:
+    x: 2.7
+    y: -0.5
+  timestamp: '2025-11-05T14:42:52.395801'
+  tree_id: 5
+  tree_position:
+    x: -1.6
+    y: 9.7
+- distance: 12.0
+  robot_position:
+    x: 3.2
+    y: -1.3
+  timestamp: '2025-11-05T14:42:59.410117'
+  tree_id: 5
+  tree_position:
+    x: -1.6
+    y: 9.7
+- distance: 12.2
+  robot_position:
+    x: 3.2
+    y: -1.5
+  timestamp: '2025-11-05T14:43:03.485441'
+  tree_id: 5
+  tree_position:
+    x: -1.6
+    y: 9.7
+- distance: 12.2
+  robot_position:
+    x: 3.1
+    y: -1.6
+  timestamp: '2025-11-05T14:43:23.322761'
+  tree_id: 5
+  tree_position:
+    x: -1.6
+    y: 9.7
+- distance: 13.2
+  robot_position:
+    x: 3.8
+    y: -2.3
+  timestamp: '2025-11-05T14:43:28.809822'
+  tree_id: 5
+  tree_position:
+    x: -1.6
+    y: 9.7
+- distance: 13.2
+  robot_position:
+    x: 3.8
+    y: -2.4
+  timestamp: '2025-11-05T14:43:29.219368'
+  tree_id: 5
+  tree_position:
+    x: -1.6
+    y: 9.7
+- distance: 14.2
+  robot_position:
+    x: 4.5
+    y: -3.1
+  timestamp: '2025-11-05T14:43:32.723187'
+  tree_id: 5
+  tree_position:
+    x: -1.6
+    y: 9.7
+- distance: 14.2
+  robot_position:
+    x: 4.5
+    y: -3.2
+  timestamp: '2025-11-05T14:43:33.235418'
+  tree_id: 5
+  tree_position:
+    x: -1.6
+    y: 9.7
+- distance: 14.4
+  robot_position:
+    x: 4.6
+    y: -3.3
+  timestamp: '2025-11-05T14:43:35.160336'
+  tree_id: 5
+  tree_position:
+    x: -1.6
+    y: 9.7
+- distance: 14.7
+  robot_position:
+    x: 4.8
+    y: -3.6
+  timestamp: '2025-11-05T14:43:38.339364'
+  tree_id: 5
+  tree_position:
+    x: -1.6
+    y: 9.7
+- distance: 4.8
+  robot_position:
+    x: 1.3
+    y: 0.0
+  timestamp: '2025-11-05T14:48:26.102005'
+  tree_id: 0
+  tree_position:
+    x: 2.6
+    y: 4.6
+- distance: 4.7
+  robot_position:
+    x: 2.2
+    y: 0.0
+  timestamp: '2025-11-05T14:48:30.256605'
+  tree_id: 0
+  tree_position:
+    x: 2.8
+    y: 4.6
+- distance: 5.6
+  robot_position:
+    x: 2.7
+    y: 0.0
+  timestamp: '2025-11-05T14:48:34.308714'
+  tree_id: 2
+  tree_position:
+    x: 5.2
+    y: -4.9
+- distance: 5.5
+  robot_position:
+    x: 3.3
+    y: 0.2
+  timestamp: '2025-11-05T14:48:37.300983'
+  tree_id: 2
+  tree_position:
+    x: 5.2
+    y: -4.9
+- distance: 5.6
+  robot_position:
+    x: 3.5
+    y: 0.4
+  timestamp: '2025-11-05T14:48:42.326995'
+  tree_id: 2
+  tree_position:
+    x: 5.2
+    y: -4.9
+- distance: 5.7
+  robot_position:
+    x: 3.6
+    y: 0.5
+  timestamp: '2025-11-05T14:48:45.616546'
+  tree_id: 2
+  tree_position:
+    x: 5.2
+    y: -4.9
+- distance: 6.0
+  robot_position:
+    x: 3.8
+    y: 1.0
+  timestamp: '2025-11-05T14:48:48.658053'
+  tree_id: 2
+  tree_position:
+    x: 5.2
+    y: -4.9
+- distance: 6.5
+  robot_position:
+    x: 3.9
+    y: 1.5
+  timestamp: '2025-11-05T14:49:07.951696'
+  tree_id: 2
+  tree_position:
+    x: 5.2
+    y: -4.9
+- distance: 7.2
+  robot_position:
+    x: 3.8
+    y: 2.1
+  timestamp: '2025-11-05T14:49:12.831037'
+  tree_id: 2
+  tree_position:
+    x: 5.2
+    y: -4.9
+- distance: 7.2
+  robot_position:
+    x: 3.8
+    y: 2.2
+  timestamp: '2025-11-05T14:49:13.067094'
+  tree_id: 2
+  tree_position:
+    x: 5.2
+    y: -4.9
+- distance: 8.3
+  robot_position:
+    x: 3.6
+    y: 3.2
+  timestamp: '2025-11-05T14:49:16.944944'
+  tree_id: 2
+  tree_position:
+    x: 5.2
+    y: -4.9
+- distance: 8.7
+  robot_position:
+    x: 3.5
+    y: 3.6
+  timestamp: '2025-11-05T14:49:19.647193'
+  tree_id: 2
+  tree_position:
+    x: 5.2
+    y: -4.9
+- distance: 9.2
+  robot_position:
+    x: 3.3
+    y: 3.9
+  timestamp: '2025-11-05T14:49:23.769121'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.2
+- distance: 9.2
+  robot_position:
+    x: 3.3
+    y: 3.8
+  timestamp: '2025-11-05T14:49:35.366671'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.2
+- distance: 9.1
+  robot_position:
+    x: 3.2
+    y: 3.7
+  timestamp: '2025-11-05T14:49:40.266644'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.2
+- distance: 9.4
+  robot_position:
+    x: 3.2
+    y: 3.8
+  timestamp: '2025-11-05T14:49:46.821114'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 9.1
+  robot_position:
+    x: 3.2
+    y: 3.5
+  timestamp: '2025-11-05T14:49:54.419037'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 8.5
+  robot_position:
+    x: 3.4
+    y: 3.0
+  timestamp: '2025-11-05T14:49:58.215594'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 8.3
+  robot_position:
+    x: 3.6
+    y: 2.8
+  timestamp: '2025-11-05T14:50:01.129034'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 8.1
+  robot_position:
+    x: 4.2
+    y: 2.7
+  timestamp: '2025-11-05T14:50:05.517999'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 8.2
+  robot_position:
+    x: 4.7
+    y: 2.8
+  timestamp: '2025-11-05T14:50:08.860126'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 8.5
+  robot_position:
+    x: 5.2
+    y: 3.1
+  timestamp: '2025-11-05T14:50:13.017779'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 8.8
+  robot_position:
+    x: 5.6
+    y: 3.4
+  timestamp: '2025-11-05T14:50:17.623579'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 9.5
+  robot_position:
+    x: 6.0
+    y: 4.1
+  timestamp: '2025-11-05T14:50:21.534866'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 9.9
+  robot_position:
+    x: 6.1
+    y: 4.4
+  timestamp: '2025-11-05T14:50:24.789670'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 10.4
+  robot_position:
+    x: 6.2
+    y: 4.9
+  timestamp: '2025-11-05T14:50:47.241735'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 11.3
+  robot_position:
+    x: 6.1
+    y: 5.9
+  timestamp: '2025-11-05T14:50:52.076387'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 12.5
+  robot_position:
+    x: 5.7
+    y: 7.1
+  timestamp: '2025-11-05T14:50:57.294660'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 13.5
+  robot_position:
+    x: 5.3
+    y: 8.1
+  timestamp: '2025-11-05T14:51:01.741323'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 14.6
+  robot_position:
+    x: 4.7
+    y: 9.2
+  timestamp: '2025-11-05T14:51:07.255541'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 15.3
+  robot_position:
+    x: 3.9
+    y: 9.9
+  timestamp: '2025-11-05T14:51:12.701449'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 15.3
+  robot_position:
+    x: 4.0
+    y: 9.8
+  timestamp: '2025-11-05T14:51:28.275517'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 15.3
+  robot_position:
+    x: 4.0
+    y: 9.9
+  timestamp: '2025-11-05T14:51:37.353081'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 15.6
+  robot_position:
+    x: 3.8
+    y: 10.2
+  timestamp: '2025-11-05T14:52:00.910269'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 16.0
+  robot_position:
+    x: 2.3
+    y: 10.3
+  timestamp: '2025-11-05T14:52:07.002684'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 15.0
+  robot_position:
+    x: 0.7
+    y: 8.9
+  timestamp: '2025-11-05T14:52:18.725423'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 14.6
+  robot_position:
+    x: 0.1
+    y: 8.3
+  timestamp: '2025-11-05T14:52:25.159948'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 14.5
+  robot_position:
+    x: -0.1
+    y: 8.1
+  timestamp: '2025-11-05T14:52:30.298532'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 14.3
+  robot_position:
+    x: -0.4
+    y: 7.8
+  timestamp: '2025-11-05T14:52:35.803253'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 14.1
+  robot_position:
+    x: -0.5
+    y: 7.6
+  timestamp: '2025-11-05T14:53:02.123191'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 13.4
+  robot_position:
+    x: -1.2
+    y: 6.5
+  timestamp: '2025-11-05T14:53:31.036750'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 12.4
+  robot_position:
+    x: -2.0
+    y: 4.8
+  timestamp: '2025-11-05T14:53:40.192949'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 11.7
+  robot_position:
+    x: -2.3
+    y: 3.7
+  timestamp: '2025-11-05T14:53:46.292352'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 10.9
+  robot_position:
+    x: -2.1
+    y: 2.9
+  timestamp: '2025-11-05T14:53:55.336968'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 10.7
+  robot_position:
+    x: -2.4
+    y: 2.3
+  timestamp: '2025-11-05T14:55:26.571624'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 9.5
+  robot_position:
+    x: -2.6
+    y: 0.2
+  timestamp: '2025-11-05T14:56:15.437517'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 8.9
+  robot_position:
+    x: -2.7
+    y: -0.9
+  timestamp: '2025-11-05T14:56:23.651270'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 8.2
+  robot_position:
+    x: -2.6
+    y: -2.5
+  timestamp: '2025-11-05T14:56:31.663587'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 7.6
+  robot_position:
+    x: -2.5
+    y: -4.2
+  timestamp: '2025-11-05T14:56:40.480502'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 7.5
+  robot_position:
+    x: -2.4
+    y: -4.5
+  timestamp: '2025-11-05T14:56:50.958163'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 7.4
+  robot_position:
+    x: -2.4
+    y: -5.0
+  timestamp: '2025-11-05T14:57:11.045614'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 7.8
+  robot_position:
+    x: -2.8
+    y: -5.9
+  timestamp: '2025-11-05T14:57:22.275761'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 9.0
+  robot_position:
+    x: -3.9
+    y: -6.7
+  timestamp: '2025-11-05T14:57:32.188988'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 8.9
+  robot_position:
+    x: -3.8
+    y: -6.7
+  timestamp: '2025-11-05T14:57:42.019350'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 8.9
+  robot_position:
+    x: -3.7
+    y: -6.7
+  timestamp: '2025-11-05T14:57:55.312197'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 10.9
+  robot_position:
+    x: -5.8
+    y: -7.1
+  timestamp: '2025-11-05T14:58:24.457788'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 12.6
+  robot_position:
+    x: -7.5
+    y: -6.9
+  timestamp: '2025-11-05T14:58:30.652119'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 12.9
+  robot_position:
+    x: -7.7
+    y: -6.9
+  timestamp: '2025-11-05T14:58:38.369178'
+  tree_id: 2
+  tree_position:
+    x: 5.0
+    y: -5.4
+- distance: 4.4
+  robot_position:
+    x: 2.5
+    y: 0.3
+  timestamp: '2025-11-05T15:21:47.269654'
+  tree_id: 0
+  tree_position:
+    x: 3.5
+    y: 4.6
+- distance: 4.0
+  robot_position:
+    x: 2.9
+    y: 0.7
+  timestamp: '2025-11-05T15:21:53.641363'
+  tree_id: 0
+  tree_position:
+    x: 3.5
+    y: 4.6
+- distance: 3.3
+  robot_position:
+    x: 3.4
+    y: 1.3
+  timestamp: '2025-11-05T15:21:57.899246'
+  tree_id: 0
+  tree_position:
+    x: 3.5
+    y: 4.6
+- distance: 2.9
+  robot_position:
+    x: 3.4
+    y: 1.4
+  timestamp: '2025-11-05T15:22:04.138601'
+  tree_id: 0
+  tree_position:
+    x: 3.7
+    y: 4.2
+- distance: 2.5
+  robot_position:
+    x: 3.5
+    y: 1.5
+  timestamp: '2025-11-05T15:22:05.643386'
+  tree_id: 0
+  tree_position:
+    x: 3.7
+    y: 4.0
+- distance: 9.1
+  robot_position:
+    x: 3.7
+    y: 2.0
+  timestamp: '2025-11-05T15:22:08.500206'
+  tree_id: 3
+  tree_position:
+    x: 11.8
+    y: -2.1
+- distance: 9.2
+  robot_position:
+    x: 3.7
+    y: 2.1
+  timestamp: '2025-11-05T15:22:09.718003'
+  tree_id: 3
+  tree_position:
+    x: 11.8
+    y: -2.1
+- distance: 9.4
+  robot_position:
+    x: 3.8
+    y: 2.6
+  timestamp: '2025-11-05T15:22:13.784992'
+  tree_id: 3
+  tree_position:
+    x: 11.8
+    y: -2.1
+- distance: 9.4
+  robot_position:
+    x: 3.8
+    y: 2.7
+  timestamp: '2025-11-05T15:22:15.429192'
+  tree_id: 3
+  tree_position:
+    x: 11.8
+    y: -2.1
+- distance: 9.9
+  robot_position:
+    x: 3.6
+    y: 3.4
+  timestamp: '2025-11-05T15:22:20.806648'
+  tree_id: 3
+  tree_position:
+    x: 11.8
+    y: -2.1
+- distance: 10.2
+  robot_position:
+    x: 3.3
+    y: 3.6
+  timestamp: '2025-11-05T15:22:53.336886'
+  tree_id: 3
+  tree_position:
+    x: 11.8
+    y: -1.9
+- distance: 11.8
+  robot_position:
+    x: 1.8
+    y: 4.2
+  timestamp: '2025-11-05T15:23:00.711160'
+  tree_id: 3
+  tree_position:
+    x: 11.8
+    y: -1.9
+- distance: 14.0
+  robot_position:
+    x: -0.5
+    y: 4.9
+  timestamp: '2025-11-05T15:23:08.813860'
+  tree_id: 3
+  tree_position:
+    x: 11.8
+    y: -1.9
+- distance: 14.8
+  robot_position:
+    x: -1.3
+    y: 5.0
+  timestamp: '2025-11-05T15:23:15.447559'
+  tree_id: 3
+  tree_position:
+    x: 11.8
+    y: -1.9
+- distance: 15.8
+  robot_position:
+    x: -2.4
+    y: 5.0
+  timestamp: '2025-11-05T15:23:44.112010'
+  tree_id: 3
+  tree_position:
+    x: 11.8
+    y: -1.9
+- distance: 16.4
+  robot_position:
+    x: -3.1
+    y: 4.8
+  timestamp: '2025-11-05T15:23:49.816062'
+  tree_id: 3
+  tree_position:
+    x: 11.8
+    y: -1.9
+- distance: 16.7
+  robot_position:
+    x: -3.5
+    y: 4.7
+  timestamp: '2025-11-05T15:23:55.890285'
+  tree_id: 3
+  tree_position:
+    x: 11.8
+    y: -1.9
+- distance: 16.7
+  robot_position:
+    x: -3.6
+    y: 4.6
+  timestamp: '2025-11-05T15:24:17.026086'
+  tree_id: 3
+  tree_position:
+    x: 11.8
+    y: -1.9
+- distance: 16.9
+  robot_position:
+    x: -4.0
+    y: 4.0
+  timestamp: '2025-11-05T15:24:24.115334'
+  tree_id: 3
+  tree_position:
+    x: 11.8
+    y: -1.9
+- distance: 17.0
+  robot_position:
+    x: -4.2
+    y: 3.8
+  timestamp: '2025-11-05T15:24:31.633762'
+  tree_id: 3
+  tree_position:
+    x: 11.8
+    y: -1.9
+- distance: 16.8
+  robot_position:
+    x: -4.1
+    y: 3.6
+  timestamp: '2025-11-05T15:24:57.442400'
+  tree_id: 3
+  tree_position:
+    x: 11.8
+    y: -1.9
+- distance: 15.7
+  robot_position:
+    x: -3.0
+    y: 3.3
+  timestamp: '2025-11-05T15:25:02.536702'
+  tree_id: 3
+  tree_position:
+    x: 11.8
+    y: -1.9
+- distance: 14.8
+  robot_position:
+    x: -1.9
+    y: 3.7
+  timestamp: '2025-11-05T15:25:10.515152'
+  tree_id: 3
+  tree_position:
+    x: 11.8
+    y: -1.9
+- distance: 14.3
+  robot_position:
+    x: -0.9
+    y: 4.5
+  timestamp: '2025-11-05T15:25:33.698326'
+  tree_id: 3
+  tree_position:
+    x: 11.8
+    y: -1.9
+- distance: 14.0
+  robot_position:
+    x: 0.1
+    y: 5.8
+  timestamp: '2025-11-05T15:25:40.756841'
+  tree_id: 3
+  tree_position:
+    x: 11.8
+    y: -1.9
+- distance: 14.2
+  robot_position:
+    x: 0.5
+    y: 6.7
+  timestamp: '2025-11-05T15:25:44.804051'
+  tree_id: 3
+  tree_position:
+    x: 11.8
+    y: -1.9
+- distance: 14.9
+  robot_position:
+    x: 0.6
+    y: 7.9
+  timestamp: '2025-11-05T15:25:51.246214'
+  tree_id: 3
+  tree_position:
+    x: 11.8
+    y: -1.9
+- distance: 14.9
+  robot_position:
+    x: 1.5
+    y: 8.8
+  timestamp: '2025-11-05T15:26:00.367091'
+  tree_id: 3
+  tree_position:
+    x: 11.8
+    y: -1.9
+- distance: 14.9
+  robot_position:
+    x: 1.6
+    y: 8.9
+  timestamp: '2025-11-05T15:26:05.006029'
+  tree_id: 3
+  tree_position:
+    x: 11.8
+    y: -1.9
+- distance: 14.4
+  robot_position:
+    x: 3.0
+    y: 9.4
+  timestamp: '2025-11-05T15:26:11.065959'
+  tree_id: 3
+  tree_position:
+    x: 11.8
+    y: -1.9
+- distance: 13.8
+  robot_position:
+    x: 3.9
+    y: 9.3
+  timestamp: '2025-11-05T15:26:17.032515'
+  tree_id: 3
+  tree_position:
+    x: 11.8
+    y: -1.9
+- distance: 12.3
+  robot_position:
+    x: 5.5
+    y: 8.6
+  timestamp: '2025-11-05T15:26:24.196015'
+  tree_id: 3
+  tree_position:
+    x: 11.8
+    y: -1.9
+- distance: 11.5
+  robot_position:
+    x: 6.2
+    y: 8.1
+  timestamp: '2025-11-05T15:26:29.755061'
+  tree_id: 3
+  tree_position:
+    x: 11.8
+    y: -1.9
+- distance: 11.5
+  robot_position:
+    x: 6.3
+    y: 8.1
+  timestamp: '2025-11-05T15:26:36.873686'
+  tree_id: 3
+  tree_position:
+    x: 11.8
+    y: -1.9
+- distance: 7.7
+  robot_position:
+    x: 3.6
+    y: 0.4
+  timestamp: '2025-11-05T15:33:40.365662'
+  tree_id: 0
+  tree_position:
+    x: 11.3
+    y: 1.1
+- distance: 7.6
+  robot_position:
+    x: 3.7
+    y: 0.4
+  timestamp: '2025-11-05T15:33:41.602974'
+  tree_id: 0
+  tree_position:
+    x: 11.3
+    y: 1.1
+- distance: 7.2
+  robot_position:
+    x: 4.1
+    y: 1.0
+  timestamp: '2025-11-05T15:33:43.800000'
+  tree_id: 0
+  tree_position:
+    x: 11.3
+    y: 1.1
+- distance: 7.1
+  robot_position:
+    x: 4.2
+    y: 1.2
+  timestamp: '2025-11-05T15:33:45.269841'
+  tree_id: 0
+  tree_position:
+    x: 11.3
+    y: 1.1
+- distance: 7.2
+  robot_position:
+    x: 4.2
+    y: 2.4
+  timestamp: '2025-11-05T15:33:49.925049'
+  tree_id: 0
+  tree_position:
+    x: 11.3
+    y: 1.1
+- distance: 7.2
+  robot_position:
+    x: 4.2
+    y: 2.5
+  timestamp: '2025-11-05T15:33:51.266212'
+  tree_id: 0
+  tree_position:
+    x: 11.3
+    y: 1.1
+- distance: 7.6
+  robot_position:
+    x: 3.9
+    y: 3.0
+  timestamp: '2025-11-05T15:33:54.049089'
+  tree_id: 0
+  tree_position:
+    x: 11.3
+    y: 1.1
+- distance: 8.0
+  robot_position:
+    x: 3.5
+    y: 3.3
+  timestamp: '2025-11-05T15:33:56.922121'
+  tree_id: 0
+  tree_position:
+    x: 11.3
+    y: 1.1
+- distance: 8.7
+  robot_position:
+    x: 2.9
+    y: 3.4
+  timestamp: '2025-11-05T15:34:00.105013'
+  tree_id: 0
+  tree_position:
+    x: 11.3
+    y: 1.1
+- distance: 9.1
+  robot_position:
+    x: 2.4
+    y: 3.2
+  timestamp: '2025-11-05T15:34:03.303358'
+  tree_id: 0
+  tree_position:
+    x: 11.3
+    y: 1.1
+- distance: 9.5
+  robot_position:
+    x: 1.9
+    y: 2.8
+  timestamp: '2025-11-05T15:34:06.513290'
+  tree_id: 0
+  tree_position:
+    x: 11.3
+    y: 1.1
+- distance: 10.1
+  robot_position:
+    x: 1.2
+    y: 2.1
+  timestamp: '2025-11-05T15:34:12.120372'
+  tree_id: 0
+  tree_position:
+    x: 11.3
+    y: 1.1
+- distance: 10.5
+  robot_position:
+    x: 0.8
+    y: 1.2
+  timestamp: '2025-11-05T15:34:16.794642'
+  tree_id: 0
+  tree_position:
+    x: 11.3
+    y: 1.1
+- distance: 10.5
+  robot_position:
+    x: 0.8
+    y: 0.9
+  timestamp: '2025-11-05T15:34:22.756093'
+  tree_id: 0
+  tree_position:
+    x: 11.3
+    y: 1.4

@@ -12,13 +12,101 @@
 #include <QShortcut>
 #include <QKeySequence>
 #include <QPlainTextEdit>
-#include <QDebug>
+#include <QDateTime>
+#include <QScrollBar>
+#include <QMessageBox>
+#include <QPixmap>
+#include <QTextCursor>
+#include <QSizePolicy>
+#include <QPainter>
+#include <QMouseEvent>
+#include <QToolTip>
+#include <QMutexLocker>
+
+// ---------------- HeatmapWidget impl ----------------
+void HeatmapWidget::paintEvent(QPaintEvent*)
+{
+  QPainter p(this);
+  p.setRenderHint(QPainter::SmoothPixmapTransform, false);
+
+  if (!img_.isNull()) {
+    // scale to widget rect
+    p.drawImage(rect(), img_);
+  } else {
+    // placeholder
+    p.fillRect(rect(), QColor("#0b1220"));
+    p.setPen(QColor("#6b7280"));
+    p.drawText(rect(), Qt::AlignCenter, "No heat map data yet");
+  }
+}
+
+bool HeatmapWidget::sampleAt(const QPoint& pos, double& wx, double& wy, float& value, bool& hasData) const
+{
+  if (!gv_.nx || !gv_.ny || !gv_.sum || !gv_.cnt || !gv_.min_x || !gv_.min_y || !gv_.res) return false;
+
+  const int W = width();
+  const int H = height();
+  if (W <= 0 || H <= 0) return false;
+
+  const int nx = *gv_.nx, ny = *gv_.ny;
+  if (nx <= 0 || ny <= 0) return false;
+
+  // map pixel -> cell coords
+  int cx = int(std::floor(double(pos.x()) * nx / double(W)));
+  int cy_img = int(std::floor(double(pos.y()) * ny / double(H)));
+  int cy = ny - 1 - cy_img; // invert Y to match toImage flip
+
+  if (cx < 0 || cy < 0 || cx >= nx || cy >= ny) return false;
+  const int idx = cy*nx + cx;
+
+  // world coords (cell center)
+  const double res = *gv_.res;
+  wx = *gv_.min_x + (cx + 0.5) * res;
+  wy = *gv_.min_y + (cy + 0.5) * res;
+
+  // read value with a short lock
+  float c = 0.f;
+  float val = 0.f;
+  if (gv_.mutex) {
+    QMutexLocker locker(gv_.mutex);
+    c   = (gv_.cnt->at(idx) > 0.f) ? gv_.cnt->at(idx) : 0.f;
+    val = (c > 0.f) ? (gv_.sum->at(idx) / c) : 0.f;
+  } else {
+    c   = (gv_.cnt->at(idx) > 0.f) ? gv_.cnt->at(idx) : 0.f;
+    val = (c > 0.f) ? (gv_.sum->at(idx) / c) : 0.f;
+  }
+
+  value   = val;
+  hasData = (c > 0.f);
+  return true;
+}
+
+void HeatmapWidget::mouseMoveEvent(QMouseEvent* ev)
+{
+  double wx, wy; float v; bool hasData;
+  if (sampleAt(ev->pos(), wx, wy, v, hasData)) {
+    const QString txt = hasData
+      ? QString("Moisture: %1").arg(QString::number(v, 'f', 3))
+      : QString("(no data)");
+    QToolTip::showText(ev->globalPos(), txt, this);
+  } else {
+    QToolTip::hideText();
+  }
+}
+
+
+// ---------------- MainWindow impl ----------------
 
 static QString dotColour(const QString& state)
 {
   if (state == "running")  return "#10b981"; // green
   if (state == "stopped")  return "#ef4444"; // red
   return "#6b7280";                          // idle grey
+}
+
+static QString ts()
+{
+  return QDateTime::currentDateTime().toString("hh:mm:ss");
 }
 
 MainWindow::MainWindow(QWidget* parent) : QWidget(parent)
@@ -60,7 +148,6 @@ MainWindow::MainWindow(QWidget* parent) : QWidget(parent)
   startBtn_ = new QPushButton("Start environment", this);
   stopBtn_  = new QPushButton("Stop environment", this);
 
-
   for (auto* b : { startBtn_, stopBtn_ }) {
     b->setMinimumHeight(56);
     b->setCursor(Qt::PointingHandCursor);
@@ -78,23 +165,19 @@ MainWindow::MainWindow(QWidget* parent) : QWidget(parent)
   btnRow->addWidget(stopBtn_);
   root->addLayout(btnRow);
 
-  // ----- New row for extra buttons
+  // ----- Second row (placeholders, still disabled)
   auto* row2 = new QHBoxLayout();
   row2->setSpacing(12);
-  
   startScriptBtn_   = new QPushButton("Start Script", this);
   manualControlBtn_ = new QPushButton("Manual Control", this);
   for (auto* b : { startScriptBtn_, manualControlBtn_ }) {
     b->setMinimumHeight(56);
     b->setCursor(Qt::PointingHandCursor);
+    b->setEnabled(false);
   }
-  // Initially disabled; enable when functionality is implemented 
-  startScriptBtn_->setEnabled(false);
-  manualControlBtn_->setEnabled(false);
   row2->addWidget(startScriptBtn_);
   row2->addWidget(manualControlBtn_);
   root->addLayout(row2);
-  
 
   // ----- Log output
   log_ = new QPlainTextEdit(this);
@@ -102,14 +185,30 @@ MainWindow::MainWindow(QWidget* parent) : QWidget(parent)
   log_->setMinimumHeight(200);
   root->addWidget(log_);
 
-  // ----- Camera label + view  (this must be INSIDE the constructor)
+  // ====== MEDIA ROW: Camera (left) | Heat-map (right) ======
+  auto* mediaRow = new QHBoxLayout();
+  mediaRow->setSpacing(16);
+
+  // Left column: Camera
+  auto* camCol = new QVBoxLayout();
   auto* camLabel = new QLabel("Camera", this);
   camLabel->setStyleSheet("font-size:16px; font-weight:600; margin-top:8px;");
-  root->addWidget(camLabel);
+  camCol->addWidget(camLabel);
 
   camView_ = new ImageWidget(this);
-  camView_->setMinimumHeight(320);
-  root->addWidget(camView_);
+  camView_->setMinimumSize(480, 360);
+  camView_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+  camCol->addWidget(camView_, 1);
+
+  mediaRow->addLayout(camCol, 1);   // stretch = 1 (expands)
+
+  // Right column: Soil Moisture (fixed-width heat-map)
+  auto* soilCol = new QVBoxLayout();
+  buildSoilSection(soilCol);        // creates title + fixed 360x360 heatmap
+  soilCol->addStretch(1);
+  mediaRow->addLayout(soilCol);
+
+  root->addLayout(mediaRow);
 
   // ----- Styling
   setStyleSheet(R"CSS(
@@ -127,7 +226,15 @@ MainWindow::MainWindow(QWidget* parent) : QWidget(parent)
     QPlainTextEdit {
       background:#0f172a; border:1px solid #374151; border-radius:12px; padding:12px; font-family:monospace;
     }
+    QLabel.sectionTitle { font-size:16px; font-weight:600; margin-top:8px; }
   )CSS");
+
+  {
+  QString ss = qApp->styleSheet();
+  ss += " QToolTip { color:#ffffff; background-color:rgba(0,0,0,220); "
+        "border:1px solid #ffffff; padding:4px 6px; border-radius:6px; }";
+  qApp->setStyleSheet(ss);
+}
 
   // ----- Launcher wiring
   launcher_ = new ProcessLauncher(this);
@@ -144,18 +251,24 @@ MainWindow::MainWindow(QWidget* parent) : QWidget(parent)
     log_->appendPlainText(QString("Process finished. Exit code %1").arg(code));
   });
 
-  // ----- ROS image subscriber (starts now, shows frames when topic is live)
+  // ----- ROS image subscriber
   img_ = new RosImageBridge(this);
   connect(img_, &RosImageBridge::frameReady, camView_, &ImageWidget::setImage);
-  img_->start(cameraTopic_.toStdString());  // defaults to "/camera/image"
+  img_->start(cameraTopic_.toStdString());
+
+  // ----- Soil ROS + timer
+  connect(this, &MainWindow::moistureReceived,  this, &MainWindow::onMoisture,  Qt::QueuedConnection);
+  connect(this, &MainWindow::sampleXYReceived, this, &MainWindow::onSampleXY, Qt::QueuedConnection);
+  uiTimer_.setInterval(100);
+  connect(&uiTimer_, &QTimer::timeout, this, &MainWindow::onUiTick);
+  uiTimer_.start();
+  startSoilSubscriptions();
 }
 
 void MainWindow::onStartClicked()
 {
   if (launcher_->isRunning()) return;
 
-  // Your exact command:
-  // ros2 launch 41068_ignition_bringup 41068_ignition.launch.py slam:=true nav2:=true rviz:=true world:=large_demo
   const QString pkg = "41068_ignition_bringup";
   const QString launch_file = "41068_ignition.launch.py";
   const QStringList extra_args = {"slam:=true", "nav2:=true", "rviz:=true", "world:=large_demo"};
@@ -185,4 +298,89 @@ void MainWindow::setStatusDot(const QString& stateKey)
 void MainWindow::setStatusText(const QString& text)
 {
   statusLabel_->setText(text);
+}
+
+// -------- Soil UI & ROS ----------
+
+void MainWindow::buildSoilSection(QVBoxLayout* column)
+{
+  soilTitle_ = new QLabel("Soil Moisture", this);
+  soilTitle_->setObjectName("soilTitle");
+  soilTitle_->setProperty("class", "sectionTitle");
+  column->addWidget(soilTitle_);
+
+  // Custom widget with hover tooltips
+  heatmapView_ = new HeatmapWidget(this);
+  heatmapView_->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+  heatmapView_->setFixedSize(heatmapSize_);
+
+  // crisp white border + black background
+  heatmapView_->setStyleSheet("background:#000; border:2px solid #ffffff; border-radius:12px;");
+
+  // Bind grid pointers for hover sampling
+  HeatmapWidget::GridView gv;
+  gv.min_x = &heatmap_.min_x; gv.min_y = &heatmap_.min_y; gv.res = &heatmap_.res;
+  gv.nx = &heatmap_.nx; gv.ny = &heatmap_.ny;
+  gv.sum = &heatmap_.sum; gv.cnt = &heatmap_.cnt;
+  gv.mutex = &heatmapMutex_;
+  heatmapView_->bindGrid(gv);
+
+  // kick an initial frame so the widget paints right away
+  heatmapView_->setImage(heatmap_.toImage());
+
+  column->addWidget(heatmapView_);
+}
+
+void MainWindow::startSoilSubscriptions()
+{
+  node_soil_ = std::make_shared<rclcpp::Node>("ui_soil_bridge");
+  exec_soil_ = std::make_shared<rclcpp::executors::MultiThreadedExecutor>();
+  exec_soil_->add_node(node_soil_);
+
+  sub_moist_ = node_soil_->create_subscription<std_msgs::msg::Float32>(
+    "/soil_moisture", 10,
+    [this](std_msgs::msg::Float32::SharedPtr m) {
+      emit moistureReceived(static_cast<float>(m->data));
+    });
+
+  sub_loc_ = node_soil_->create_subscription<geometry_msgs::msg::PointStamped>(
+    "/soil_sample_location", 10,
+    [this](geometry_msgs::msg::PointStamped::SharedPtr m) {
+      emit sampleXYReceived(m->point.x, m->point.y);
+    });
+
+  ros_soil_thread_ = std::thread([this]() { exec_soil_->spin(); });
+}
+
+void MainWindow::stopSoilSubscriptions()
+{
+  if (exec_soil_) exec_soil_->cancel();
+  if (ros_soil_thread_.joinable()) ros_soil_thread_.join();
+  exec_soil_.reset();
+  node_soil_.reset();
+}
+
+void MainWindow::onMoisture(float v)
+{
+  lastMoisture_.store(v, std::memory_order_relaxed);
+}
+
+void MainWindow::onSampleXY(double x, double y)
+{
+  const float v = lastMoisture_.load(std::memory_order_relaxed);
+  QMutexLocker lock(&heatmapMutex_);
+  heatmap_.add(x, y, v);
+}
+
+void MainWindow::onUiTick()
+{
+  if (!heatmapView_) return;
+
+  QImage img;
+  {
+    QMutexLocker lock(&heatmapMutex_);
+    img = heatmap_.toImage();
+  }
+  // give raw grid image; widget scales it to its fixed rect
+  heatmapView_->setImage(img);
 }
