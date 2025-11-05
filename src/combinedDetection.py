@@ -177,7 +177,7 @@ class CombinedDetectionNode(Node):
         self.published_marker_ids = set()
         self.last_camera_update = 0  # Track when camera last processed
         
-        self.get_logger().info('Two-Stage Detection Node Started with Depth-Based Rock Detection')
+        self.get_logger().info('Combined detection')
 
     def depth_callback(self, msg):
         try:
@@ -443,7 +443,7 @@ class CombinedDetectionNode(Node):
         
         camera_frame = self.get_parameter('camera_frame').value
         
-        # Process each rock detection
+        # Go through each rock
         for detection in detections:
             if detection['class_name'].lower() != 'rock':
                 continue
@@ -468,7 +468,7 @@ class CombinedDetectionNode(Node):
                 sample_region_x:sample_region_x + sample_region_w
             ]
             
-            # Get median depth (more robust than mean)
+            # Get median depth
             valid_depths = depth_region[np.isfinite(depth_region) & (depth_region > 0)]
             
             if len(valid_depths) == 0:
@@ -637,7 +637,7 @@ class CombinedDetectionNode(Node):
         max_match_distance = 10.0
         
         for detection in detections:
-            # Skip rocks - they're handled by depth processing
+            # Skip rocks, handled elsewhere
             if detection['class_name'].lower() == 'rock':
                 continue
             
@@ -678,7 +678,7 @@ class CombinedDetectionNode(Node):
                 if tracked_obj.confirmed:
                     continue
                 
-                # CRITICAL: Only match objects that are in camera FOV
+                # Only match objects that are in camera FOV
                 if not tracked_obj.in_camera_fov:
                     continue
                 
@@ -805,7 +805,7 @@ class CombinedDetectionNode(Node):
             marker.pose.orientation.w = 1.0
             
             if obj.confirmed:
-                # Different colors for rocks vs other objects
+                # Different colors for different markers
                 if obj.class_name.lower() == 'rock':
                     marker.scale.x = marker.scale.y = marker.scale.z = 0.4
                     marker.color.r, marker.color.g, marker.color.b, marker.color.a = 0.6, 0.4, 0.2, 1.0  # Brown (Rock)
@@ -840,7 +840,6 @@ class CombinedDetectionNode(Node):
                 text.color.r, text.color.g, text.color.b, text.color.a = 1.0, 1.0, 0.0, 1.0  # Yellow
                 text.text = f"?\n{obj.distance:.1f}m"
             
-            # NO LIFETIME - text markers are permanent
             marker_array.markers.append(text)
         
         self.tracked_objects_pub.publish(marker_array)
