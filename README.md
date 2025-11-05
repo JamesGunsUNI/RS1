@@ -52,9 +52,12 @@ Now install this package:
   ros2 launch soil_moisture_sensor_pkg soil_sensor_launch.py
  
   #Laucnh image detection and mission
+  cd src/object_detection
+  python3 combinedDetection.py
+
   cd src/env_pkg/src
-  python3 imageRecognition.py #make sure you have pip install ultralytics installed!
   python3 mission.py
+
 
 
   ```

@@ -5,9 +5,8 @@ import time
 
 # IMPORTANT: make sure Robot can be imported when installed.
 # If robot.py lives in env_pkg/env_pkg/robot.py, use this:
-from env_pkg.robot import Robot
 # If you currently have `robot.py` somewhere else, see Step 2.
-
+from robot import Robot
 class MissionControl:
     def __init__(self, num_robots=1):
         self.robots = [Robot(f'robot_{i}') for i in range(num_robots)]

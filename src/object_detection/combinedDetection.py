@@ -117,7 +117,7 @@ class CombinedDetectionNode(Node):
         )
         
         # Load YOLO model
-        self.detection_model = YOLO('/home/marcus/41068_ws/src/RS1/src/ModelV2.pt')
+        self.detection_model = YOLO('ModelV2.pt')
         
         # Declare parameters with improved defaults
         self.declare_parameter('log_detections', True)
