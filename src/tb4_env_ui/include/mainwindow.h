@@ -1,3 +1,26 @@
+/*
+File: mainwindow.h
+Role & context:
+  - Declares the top‑level UI (MainWindow) and a small helper widget (HeatmapWidget) used to display
+    a hover‑enabled soil‑moisture heat map alongside a live camera view and process controls.
+System diagram (simplified data flow):
+  ROS nodes  ──────► RosImageBridge ──► ImageWidget (QImage frames)
+                └──► ROS Soil subs   ──► MainWindow heatmap (grid aggregation) ──► HeatmapWidget
+  UI buttons ─────► ProcessLauncher (ros2 launch bringup / shutdown)
+HeatmapWidget:
+  - Owns a QImage texture of the heat map and a thin read‑only view (GridView) onto the underlying grid data.
+  - On mouse hover, converts widget pixel coordinates → grid cell → world coordinates and shows a tooltip
+    with the moisture value (white font, black tooltip background set in style).
+MainWindow:
+  - Composes the overall layout, styles, buttons, logging console, camera viewer, and the heat map panel.
+  - Manages ROS subscriptions for soil moisture and sample locations on a background executor thread.
+  - Periodically (100 ms) renders the grid into an image, which the HeatmapWidget scales to its fixed rect.
+Concurrency & safety:
+  - The heat map grid is protected by QMutex during updates and rendering. Atomics store the latest moisture.
+  - Qt queued connections ensure cross‑thread signal delivery to the GUI thread.
+Color mapping:
+  - Uses a readable red→white→blue ramp to encode low→mid→high moisture with good contrast.
+*/
 #pragma once
 
 #include <QWidget>
@@ -30,6 +53,15 @@ class RosImageBridge;
 
 // ---------------- HeatmapWidget (for hover tooltip) ----------------
 class HeatmapWidget : public QWidget {
+
+/**
+ * @class HeatmapWidget
+ * @brief Paints a heat map image and shows a hover tooltip of the underlying data.
+ * @details
+ *   - `GridView` exposes read-only pointers into the live grid owned by MainWindow.
+ *   - `mouseMoveEvent` samples the cell under the cursor and displays the mean value.
+ */
+
   Q_OBJECT
 public:
   explicit HeatmapWidget(QWidget* parent=nullptr) : QWidget(parent) {
@@ -37,6 +69,8 @@ public:
   }
 
   struct GridView {
+  /// Lightweight, read-only view into the heat map grid owned elsewhere.
+
     // read-only view of the grid
     const double* min_x{};
     const double* min_y{};
@@ -56,7 +90,9 @@ protected:
   void mouseMoveEvent(QMouseEvent* ev) override;
 
 private:
-  bool sampleAt(const QPoint& pos, double& wx, double& wy, float& value, bool& hasData) const;
+  bool sampleAt(
+  /// Map widget pixel → grid cell → world coords; fetch per-cell mean safely.
+const QPoint& pos, double& wx, double& wy, float& value, bool& hasData) const;
 
   QImage  img_;
   GridView gv_{};
@@ -64,6 +100,13 @@ private:
 
 // ---------------- MainWindow ----------------
 class MainWindow : public QWidget
+
+/**
+ * @class MainWindow
+ * @brief Composes the camera, launcher controls, and the soil moisture heat map.
+ * @details Manages ROS subscriptions, periodic UI updates, and styling.
+ */
+
 {
   Q_OBJECT
 public:
@@ -115,6 +158,9 @@ private:
 public:
   // ---- Soil heat-map data & rendering ----
   struct HeatmapGrid {
+
+/// @brief Accumulation grid: per-cell mean = sum/cnt. Provides color mapping and image conversion.
+
     double min_x{-10.0}, max_x{10.0}, min_y{-10.0}, max_y{10.0}, res{0.5};
     int nx{0}, ny{0};
     std::vector<float> sum, cnt;

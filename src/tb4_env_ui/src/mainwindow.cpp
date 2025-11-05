@@ -1,3 +1,24 @@
+/*
+File: mainwindow.cpp
+What this file implements:
+  - The full UI construction (layout, styles, buttons, logging console), the camera panel wiring,
+    and the soil‑moisture heat map, including a custom HeatmapWidget that supports hover sampling.
+Key interactions:
+  - Start/Stop buttons drive ProcessLauncher to run/kill a `ros2 launch` bringup.
+  - RosImageBridge feeds a QImage stream into ImageWidget.
+  - Two ROS subscriptions feed the heat map: moisture values and sample locations.
+Rendering pipeline for the heat map:
+  1) Incoming Float32 moisture is stored atomically as the 'latest' value.
+  2) Each PointStamped (x,y) deposits that value into the corresponding grid cell (sum/cnt).
+  3) Every 100 ms, the grid is converted to a QImage using a red→white→blue ramp.
+  4) The HeatmapWidget scales and draws that image; hover shows a tooltip with the cell's value.
+Concurrency notes:
+  - Grid access is protected by QMutex during update and rendering; UI updates occur on the GUI thread.
+  - Qt queued connections are used for ROS→UI communication paths where needed.
+UX details:
+  - Styled dark theme; tooltip uses white text on a nearly black background with a white border.
+  - Status dot changes color; log console captures launcher output.
+*/
 #include "mainwindow.h"
 #include "process_launcher.h"
 #include "ros_image_bridge.h"
@@ -24,7 +45,8 @@
 #include <QMutexLocker>
 
 // ---------------- HeatmapWidget impl ----------------
-void HeatmapWidget::paintEvent(QPaintEvent*)
+void HeatmapWidget::paintEvent
+/** Paint handler: draws the heat map image or a friendly placeholder when empty. */(QPaintEvent*)
 {
   QPainter p(this);
   p.setRenderHint(QPainter::SmoothPixmapTransform, false);
@@ -40,7 +62,14 @@ void HeatmapWidget::paintEvent(QPaintEvent*)
   }
 }
 
-bool HeatmapWidget::sampleAt(const QPoint& pos, double& wx, double& wy, float& value, bool& hasData) const
+bool HeatmapWidget::sampleAt(
+
+/** @brief Convert mouse position → grid indices → world coords, then read mean value.
+ *  Implementation details:
+ *   - Respects Y inversion to match `toImage` flipping (image row 0 at the bottom).
+ *   - Uses QMutexLocker if a mutex pointer is provided to ensure thread-safe reads.
+ */
+const QPoint& pos, double& wx, double& wy, float& value, bool& hasData) const
 {
   if (!gv_.nx || !gv_.ny || !gv_.sum || !gv_.cnt || !gv_.min_x || !gv_.min_y || !gv_.res) return false;
 
@@ -81,7 +110,8 @@ bool HeatmapWidget::sampleAt(const QPoint& pos, double& wx, double& wy, float& v
   return true;
 }
 
-void HeatmapWidget::mouseMoveEvent(QMouseEvent* ev)
+void HeatmapWidget::mouseMoveEvent(
+/** On hover, show a tooltip with the cell's moisture value; hide when out of bounds. */QMouseEvent* ev)
 {
   double wx, wy; float v; bool hasData;
   if (sampleAt(ev->pos(), wx, wy, v, hasData)) {
@@ -110,6 +140,13 @@ static QString ts()
 }
 
 MainWindow::MainWindow(QWidget* parent) : QWidget(parent)
+
+/** @brief Construct the UI, wire signals/slots, start image/ROS subscriptions and timers.
+ *  Layout:
+ *   - Title + status row + Start/Stop buttons + log console.
+ *   - Media row: Camera (left) and Soil Moisture heat map (right).
+ */
+
 {
   setWindowTitle("TB4 Environment Controller");
   resize(900, 700);
@@ -251,12 +288,12 @@ MainWindow::MainWindow(QWidget* parent) : QWidget(parent)
     log_->appendPlainText(QString("Process finished. Exit code %1").arg(code));
   });
 
-  // ----- ROS image subscriber
+  // ----- ROS image subscriber   (Topic in mainwindow.h)
   img_ = new RosImageBridge(this);
   connect(img_, &RosImageBridge::frameReady, camView_, &ImageWidget::setImage);
   img_->start(cameraTopic_.toStdString());
 
-  // ----- Soil ROS + timer
+  // ----- Soil ROS + timer (Scroll down for Topics/Subs) -----
   connect(this, &MainWindow::moistureReceived,  this, &MainWindow::onMoisture,  Qt::QueuedConnection);
   connect(this, &MainWindow::sampleXYReceived, this, &MainWindow::onSampleXY, Qt::QueuedConnection);
   uiTimer_.setInterval(100);
@@ -265,7 +302,8 @@ MainWindow::MainWindow(QWidget* parent) : QWidget(parent)
   startSoilSubscriptions();
 }
 
-void MainWindow::onStartClicked()
+void MainWindow::onStartClicked(
+/** Start the external simulation/bringup using ProcessLauncher and report to the log. */)
 {
   if (launcher_->isRunning()) return;
 
@@ -280,7 +318,8 @@ void MainWindow::onStartClicked()
   }
 }
 
-void MainWindow::onStopClicked()
+void MainWindow::onStopClicked(
+/** Stop the external bringup and report to the log. */)
 {
   if (!launcher_->isRunning()) return;
   log_->appendPlainText("Stopping environment...");
@@ -302,7 +341,13 @@ void MainWindow::setStatusText(const QString& text)
 
 // -------- Soil UI & ROS ----------
 
-void MainWindow::buildSoilSection(QVBoxLayout* column)
+void MainWindow::buildSoilSection(
+
+/** @brief Create the Soil Moisture panel.
+ *  - Fixes widget size for stable layout; provides a white border on black background.
+ *  - Binds a GridView into the underlying heat map for hover sampling.
+ */
+QVBoxLayout* column)
 {
   soilTitle_ = new QLabel("Soil Moisture", this);
   soilTitle_->setObjectName("soilTitle");
@@ -331,7 +376,8 @@ void MainWindow::buildSoilSection(QVBoxLayout* column)
   column->addWidget(heatmapView_);
 }
 
-void MainWindow::startSoilSubscriptions()
+void MainWindow::startSoilSubscriptions(
+/** Start ROS node/executor and two subscriptions; spin in a background thread. */)
 {
   node_soil_ = std::make_shared<rclcpp::Node>("ui_soil_bridge");
   exec_soil_ = std::make_shared<rclcpp::executors::MultiThreadedExecutor>();
@@ -365,14 +411,16 @@ void MainWindow::onMoisture(float v)
   lastMoisture_.store(v, std::memory_order_relaxed);
 }
 
-void MainWindow::onSampleXY(double x, double y)
+void MainWindow::onSampleXY(
+/** On location sample: add the latest moisture into the corresponding cell (thread-safe). */double x, double y)
 {
   const float v = lastMoisture_.load(std::memory_order_relaxed);
   QMutexLocker lock(&heatmapMutex_);
   heatmap_.add(x, y, v);
 }
 
-void MainWindow::onUiTick()
+void MainWindow::onUiTick(
+/** Periodically render the heat map grid into an image and hand it to the widget. */)
 {
   if (!heatmapView_) return;
 

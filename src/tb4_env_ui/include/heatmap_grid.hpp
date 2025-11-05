@@ -1,3 +1,20 @@
+/*
+File: heatmap_grid.hpp
+Role & context:
+  - Provides a small, header‑only HeatmapGrid struct for aggregating scalar samples (e.g., soil moisture)
+    over a 2D spatial grid and rendering them as a QImage heat map.
+Data model:
+  - [min_x, max_x] × [min_y, max_y] is discretized at resolution `res` into nx×ny cells.
+  - For each cell, `sum[i]` accumulates the values, `cnt[i]` counts samples. The mean is sum/cnt.
+Rendering:
+  - `toImage()` converts per‑cell means into colors using a compact red→green→blue ramp, with alpha for blending.
+  - Note: image Y is flipped so that higher Y appears toward the top when drawn in Qt screen coordinates.
+Typical use:
+  - Call add(x, y, value) as samples arrive; periodically call toImage() to obtain a texture for display.
+Numerical concerns:
+  - Grid bounds are inclusive on the lower edge; samples outside the bounds are ignored by `index()`.
+  - Values are clamped to [0,1] before mapping to color.
+*/
 #pragma once
 #include <vector>
 #include <QImage>

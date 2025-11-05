@@ -1,3 +1,13 @@
+/*
+File: process_launcher.cpp
+High‑level behavior:
+  - Starts `ros2 launch ...` under /bin/bash -lc so user shell setup (ROS overlays, PATH, hooks) applies.
+  - Streams both stdout and stderr line‑by‑line to a single `outputLine` signal for a simple UI console.
+  - Tracks lifecycle and exposes a reliable stop() that escalates from SIGINT to SIGTERM to SIGKILL.
+Design trade‑offs:
+  - Using an external bringup keeps the UI process clean, avoids node lifetime tangles, and matches
+    how ROS 2 users usually work in terminals.
+*/
 #include "process_launcher.h"
 #include <QProcessEnvironment>
 #include <QStringList>
@@ -30,7 +40,12 @@ void ProcessLauncher::hookSignals() {
           });
 }
 
-bool ProcessLauncher::startRos2Launch(const QString& pkg,
+bool ProcessLauncher::startRos2Launch(
+
+/** @brief Start `ros2 launch` in a login shell so ROS setup files are honored.
+ *  Streams both stdout and stderr to the UI by merging channels.
+ */
+const QString& pkg,
                                       const QString& launch_file,
                                       const QStringList& extra_args)
 {
@@ -61,6 +76,11 @@ bool ProcessLauncher::startRos2Launch(const QString& pkg,
 }
 
 void ProcessLauncher::stop() {
+
+/** @brief Attempt graceful shutdown first (SIGINT), then escalate to SIGTERM/SIGKILL.
+ *  This mirrors how users stop ros2 launch in a terminal with Ctrl-C.
+ */
+
   if (!proc_) return;
 
 #ifdef Q_OS_UNIX

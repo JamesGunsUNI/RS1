@@ -1,7 +1,19 @@
+/*
+File: soil_moisture_dock.cpp
+What happens here:
+  - Builds the dock UI, wires a 10 Hz timer, and starts a ROS 2 executor thread.
+  - Subscribes to `/soil_moisture` (Float32) and `/soil_sample_location` (PointStamped).
+    Each location sample deposits the last moisture value into the corresponding grid cell.
+  - Repaints the heat map periodically by converting the grid to a QImage.
+User‑visible behavior:
+  - The dock title includes a heartbeat of the latest value, and the 'Latest:' label is bold and larger.
+  - The heat map label auto-scales while keeping a visual border and sunken frame.
+*/
 #include "soil_moisture_dock.h"
 
 SoilMoistureDock::SoilMoistureDock(QWidget* parent)
 : QDockWidget(parent)
+/** Build UI, start a 10 Hz timer, and launch ROS executor thread. */
 {
   setObjectName("dock_soil_moisture");
   setWindowTitle(tr("Soil Moisture"));
@@ -21,6 +33,7 @@ SoilMoistureDock::~SoilMoistureDock() {
 }
 
 void SoilMoistureDock::buildUi() {
+/** Compose labels and heat map canvas; apply sizing and visual affordances. */
   wrap_ = new QWidget(this);
   auto* v = new QVBoxLayout(wrap_);
 
@@ -45,6 +58,12 @@ void SoilMoistureDock::buildUi() {
 }
 
 void SoilMoistureDock::startRos() {
+
+/** @brief Create node/executor, subscribe to topics, and spin in a background thread.
+ *  - /soil_moisture updates `lastMoisture_` and the dock title/label on the GUI thread.
+ *  - /soil_sample_location deposits the last value into the grid under mutex protection.
+ */
+
   node_ = std::make_shared<rclcpp::Node>("ui_soil_bridge");
   exec_ = std::make_shared<rclcpp::executors::MultiThreadedExecutor>();
   exec_->add_node(node_);
@@ -83,6 +102,7 @@ void SoilMoistureDock::stopRos() {
 }
 
 void SoilMoistureDock::onUiTick() {
+/** Periodically convert the grid to QImage and scale it into the label's pixmap. */
   if (!heatmapLabel_) return;
   QImage img;
   {

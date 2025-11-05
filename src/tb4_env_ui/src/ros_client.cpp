@@ -1,3 +1,11 @@
+/*
+File: ros_client.cpp
+High‑level behavior:
+  - Implements start()/stop() service calls with modest retry (up to ~5 s) for discovery.
+  - Responses are posted back to the GUI thread via QMetaObject::invokeMethod and emitted as signals.
+Resilience:
+  - If ROS is shutting down or the service is absent, emits a clear failure message instead of blocking.
+*/
 #include "ros_client.h"
 #include <QMetaObject>
 #include <QString>
@@ -22,14 +30,20 @@ RosClient::~RosClient() {
   if (spin_thread_.joinable()) spin_thread_.join();
 }
 
-bool RosClient::servicesAvailable() const {
+bool RosClient::servicesAvailable(
+/** True once both /env/start and /env/stop are discovered (non-blocking check). */) const {
   // service_is_ready() becomes true once a server is discovered
   return start_client_ && stop_client_
       && start_client_->service_is_ready()
       && stop_client_->service_is_ready();
 }
 
-void RosClient::start() {
+void RosClient::start(
+
+/** @brief Call /env/start with a short wait-for-service loop (~5 s).
+ *  Response is emitted via startResult on the GUI thread.
+ */
+) {
   auto req = std::make_shared<std_srvs::srv::Trigger::Request>();
 
   // Wait up to ~5s for the service (discovery can be slow on some setups)
@@ -50,7 +64,12 @@ void RosClient::start() {
   (void)fut;
 }
 
-void RosClient::stop() {
+void RosClient::stop(
+
+/** @brief Call /env/stop with a short wait-for-service loop (~5 s).
+ *  Response is emitted via stopResult on the GUI thread.
+ */
+) {
   auto req = std::make_shared<std_srvs::srv::Trigger::Request>();
 
   bool ready = false;

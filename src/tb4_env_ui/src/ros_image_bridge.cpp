@@ -1,13 +1,33 @@
+/*
+File: ros_image_bridge.cpp
+High‑level behavior:
+  - Creates a ROS 2 node and SingleThreadedExecutor on demand, subscribes to an image_transport topic,
+    decodes incoming sensor_msgs/Image into QImage, and emits a Qt signal on the GUI thread.
+Image decoding details:
+  - Prefers BGR8 (common in OpenCV), falls back to the message's native encoding.
+  - Handles grayscale and RGB/BGRA cases; uses OpenCV color conversions where necessary.
+Threading:
+  - The ROS executor spins in `spin_thread_`. Frames are posted to the GUI using a QueuedConnection.
+Failure modes:
+  - Any per‑frame conversion errors are caught and dropped to avoid log spam or crashes.
+*/
 #include "ros_image_bridge.h"
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/imgproc.hpp>
 #include <QMetaObject>
 
 RosImageBridge::RosImageBridge(QObject* parent) : QObject(parent) {}
+/** Constructor: initializes QObject base; node/executor are created lazily in ensureNode(). */
 
 RosImageBridge::~RosImageBridge() { stop(); }
+/** Destructor: ensures subscription/executor are stopped and thread is joined. */
 
 void RosImageBridge::ensureNode() {
+
+/** @brief Lazily allocate the ROS node, executor, spinning thread, and image transport.
+ *  Rationale: Defers ROS creation cost until the first call to start(), keeping startup light.
+ */
+
   if (node_) return;
   node_ = rclcpp::Node::make_shared("tb4_env_ui_img");
   exec_ = std::make_unique<rclcpp::executors::SingleThreadedExecutor>();
@@ -16,7 +36,14 @@ void RosImageBridge::ensureNode() {
   it_ = std::make_unique<image_transport::ImageTransport>(node_);
 }
 
-void RosImageBridge::start(const std::string& topic) {
+void RosImageBridge::start(
+
+/** @brief (Re)subscribe to a given image topic and forward frames to Qt as QImage.
+ *  Notes:
+ *   - Tries BGR8 first to minimize copying with OpenCV; falls back to native encodings.
+ *   - Uses QMetaObject::invokeMethod with QueuedConnection to hop back to the GUI thread.
+ */
+const std::string& topic) {
   ensureNode();
 
   // unsubscribe any previous
@@ -57,6 +84,7 @@ void RosImageBridge::start(const std::string& topic) {
 }
 
 void RosImageBridge::stop() {
+/** @brief Stop subscription and tear down executor/thread safely (idempotent). */
   sub_.shutdown();
   if (exec_) exec_->cancel();
   if (spin_thread_.joinable()) spin_thread_.join();

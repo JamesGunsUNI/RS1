@@ -1,3 +1,11 @@
+/*
+File: ros_bridge.hpp
+Role & context:
+  - A compact QObject that exposes two Qt signals (`moisture`, `sampleXY`) sourced from two ROS 2 subscriptions.
+  - Useful when you want to keep the UI ignorant of rclcpp details: connect signals directly to UI slots.
+Concurrency:
+  - A MultiThreadedExecutor spins in a background std::thread. Destructor cancels and joins cleanly.
+*/
 #pragma once
 #include <QObject>
 #include <thread>
@@ -7,6 +15,12 @@
 #include <geometry_msgs/msg/point_stamped.hpp>
 
 class RosBridge : public QObject {
+
+/**
+ * @class RosBridge
+ * @brief Emits Qt signals for moisture and sample locations backed by ROS 2 subscriptions.
+ */
+
   Q_OBJECT
 public:
   explicit RosBridge(QObject* parent = nullptr)
@@ -34,8 +48,12 @@ public:
   }
 
 signals:
-  void moisture(float value);          // 0..1
-  void sampleXY(double x, double y);   // map coords
+  void moisture(
+  /// Emitted with the latest normalized moisture value in [0,1].
+float value);          // 0..1
+  void sampleXY(
+  /// Emitted with the map-space coordinates (x,y) of a soil sample.
+double x, double y);   // map coords
 
 private:
   rclcpp::Node::SharedPtr node_;

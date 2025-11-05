@@ -1,3 +1,16 @@
+/*
+File: soil_moisture_dock.h
+Role & context:
+  - Declares SoilMoistureDock, a dockable Qt widget that displays the latest soil moisture value
+    and a live heat map generated from ROS 2 topics `/soil_moisture` and `/soil_sample_location`.
+Structure:
+  - UI elements (labels, timers), an internal HeatmapGrid (sum/cnt), and ROS executor/subscriptions.
+Update cadence:
+  - A 10 Hz QTimer re-renders the grid into a QImage and scales it into the dock's label.
+Threading:
+  - A MultiThreadedExecutor spins in a std::thread. A std::mutex protects grid updates.
+  - Atomics hold the last numeric moisture sample.
+*/
 #pragma once
 #include <QDockWidget>
 #include <QLabel>
@@ -20,6 +33,12 @@
 #include <geometry_msgs/msg/point_stamped.hpp>
 
 class SoilMoistureDock : public QDockWidget {
+
+/**
+ * @class SoilMoistureDock
+ * @brief Dockable panel showing latest moisture and a live heat map sourced from ROS 2 topics.
+ */
+
   Q_OBJECT
 public:
   explicit SoilMoistureDock(QWidget* parent = nullptr);
@@ -27,6 +46,8 @@ public:
 
 private slots:
   void onUiTick();
+  /// Timer slot (10 Hz): re-render the grid and update the pixmap.
+
 
 private:
   // ---- UI ----
@@ -37,6 +58,8 @@ private:
 
   // ---- Heatmap state ----
   struct HeatmapGrid {
+  /// Internal accumulation grid (sum/cnt) rendered to a QImage.
+
     double min_x{-10.0}, max_x{10.0}, min_y{-10.0}, max_y{10.0}, res{0.5};
     int nx{0}, ny{0};
     std::vector<float> sum, cnt;
